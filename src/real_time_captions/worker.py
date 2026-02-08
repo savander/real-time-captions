@@ -29,6 +29,7 @@ class WorkerConfig:
     model_size_override: Optional[str] = None
     force_cpu: bool = False
     max_cpu_ram_gb: Optional[int] = None
+    task: str = "translate"
 
 
 class MessageHandler:
@@ -128,6 +129,7 @@ class AudioWorker:
                     model_size_override=self.config.model_size_override,
                     force_cpu=self.config.force_cpu,
                     max_cpu_ram_gb=self.config.max_cpu_ram_gb,
+                    task=self.config.task,
                 )
 
             return True
@@ -234,12 +236,14 @@ def run_worker_logic(
     model_size_override: Optional[str] = None,
     force_cpu: bool = False,
     max_cpu_ram_gb: Optional[int] = None,
+    task: str = "translate",
 ) -> None:
     logger.info("Starting AudioWorker logic.")
     config = WorkerConfig(
         model_size_override=model_size_override,
         force_cpu=force_cpu,
         max_cpu_ram_gb=max_cpu_ram_gb,
+        task=task,
     )
     worker = AudioWorker(language, config=config)
     worker.run()

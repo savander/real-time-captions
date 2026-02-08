@@ -26,9 +26,11 @@ class TranscriptionEngine:
         model_size_override: Optional[str] = None,
         force_cpu: bool = False,
         max_cpu_ram_gb: Optional[int] = None,
+        task: str = "translate",
     ) -> None:
         logger.info("TranscriptionEngine init start")
         self.language = language
+        self.task = task
 
         if force_cpu:
             self.device = "cpu"
@@ -122,7 +124,7 @@ class TranscriptionEngine:
         logger.info(
             "TranscriptionEngine initialized with: "
             f"model_size='{self.model_size}', device='{self.device}', compute_type='{self.compute_type}', "
-            f"beam_size='{self.beam_size}', vad_filter='{self.vad_filter}'"
+            f"beam_size='{self.beam_size}', vad_filter='{self.vad_filter}', task='{self.task}'"
         )
         logger.info("TranscriptionEngine ready.")
 
@@ -132,7 +134,7 @@ class TranscriptionEngine:
         segments, _ = self.model.transcribe(
             audio_data,
             language=final_language,
-            task="translate",
+            task=self.task,
             beam_size=self.beam_size,
             vad_filter=self.vad_filter,
         )

@@ -13,6 +13,7 @@ def run_gui(
     model_size_override: Optional[str] = None,
     force_cpu: bool = False,
     max_cpu_ram_gb: Optional[int] = None,
+    task: str = "translate",
 ):
     """
     Entry point to start the subtitle overlay.
@@ -26,6 +27,7 @@ def run_gui(
         model_size_override=model_size_override,
         force_cpu=force_cpu,
         max_cpu_ram_gb=max_cpu_ram_gb,
+        task=task,
     )
     window.show()
 

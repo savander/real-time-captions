@@ -32,6 +32,7 @@ class SubtitleWindow(QMainWindow):
         model_size_override: Optional[str] = None,
         force_cpu: bool = False,
         max_cpu_ram_gb: Optional[int] = None,
+        task: str = "translate",
     ):
         super().__init__()
         self._drag_start_position: Optional[QPoint] = None
@@ -43,6 +44,7 @@ class SubtitleWindow(QMainWindow):
         self._model_size_override = model_size_override
         self._force_cpu = force_cpu
         self._max_cpu_ram_gb = max_cpu_ram_gb
+        self._task = task
 
         self._window_flasher = WindowFlasher(
             self, flash_duration_ms=3000, flicker_interval_ms=300
@@ -108,6 +110,8 @@ class SubtitleWindow(QMainWindow):
             cmd.append("--cpu")
         if self._max_cpu_ram_gb is not None:
             cmd.extend(["--max-cpu-ram-gb", str(self._max_cpu_ram_gb)])
+        if self._task:
+            cmd.extend(["--task", self._task])
         self._worker = WorkerThread(cmd)
         self._worker.text_received.connect(self._on_text_received)
         self._worker.status_received.connect(self._on_status_received)
