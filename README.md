@@ -9,7 +9,15 @@
 
 "Real-Time Captions" generates real-time captions from system audio. It uses `faster-whisper` for efficient speech-to-text, `PyQt6` for the GUI, and `torch`/`transformers` for AI models.
 
-Crucially, a worker process is always spawned. In GUI mode, this worker communicates via Inter-Process Communication (IPC) to send captions to the UI. When run in standalone worker mode (`--worker`), the worker directly prints the captions to the console.
+A worker process is always spawned. In GUI mode, this worker communicates via Inter-Process Communication (IPC) to send captions to the UI. When run in standalone worker mode (`--worker`), the worker directly prints the captions to the console.
+
+**Note**: There is an inherent delay of approximately 2-3 seconds between the spoken audio and its transcription appearing.
+
+## Showcase
+
+Here's an example of the real-time captions in action:
+
+![Real-Time Captions in action](docs/example.png)
 
 ## How to Get Started
 
@@ -44,7 +52,30 @@ uv run real-time-captions --worker --language pl --cpu
 ```
 For all command-line options and available language codes, use `uv run real-time-captions --help`.
 
-### Recommendations for Lower-End Systems
+## Convenience Script (`start.vbs`)
+
+For Windows users, `start.vbs` provides a way to launch the GUI application without displaying a command prompt window. This VBScript simply executes the command `uv run real-time-captions` in the background.
+
+You can create a shortcut to `start.vbs` and place it on your desktop or in your Start Menu for easy access.
+
+If you wish to include default arguments (e.g., `--language en --model-size base`), you can edit the `start.vbs` file in a text editor. Change the line:
+`WshShell.Run "uv run real-time-captions", 0, False`
+to, for example:
+`WshShell.Run "uv run real-time-captions --language en --model-size base", 0, False`
+
+**Note**: At present, `start.vbs` does not work correctly when launched via PowerToys Run.
+
+## Interacting with the Subtitle Window
+
+The subtitle window can be customized using mouse interactions:
+
+*   **Move Window**: Click and drag anywhere on the window (except the bottom-right corner) to reposition it.
+*   **Resize Window**: Hover over the window to reveal a small grip in the bottom-right corner. Click and drag this grip to resize the window.
+*   **Change Font Size**: Use the **scroll wheel** over the window to increase or decrease the subtitle font size.
+*   **Adjust Background Opacity**: Hold **Ctrl** and use the **scroll wheel** to change the background opacity of the subtitle window.
+*   **Adjust Number of Lines**: Hold **Shift** and use the **scroll wheel** to adjust the number of subtitle lines displayed simultaneously.
+
+## Recommendations for Lower-End Systems
 
 For systems with limited resources (e.g., older CPUs, less RAM, no dedicated GPU), consider the following options to optimize performance:
 
