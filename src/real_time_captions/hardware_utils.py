@@ -1,3 +1,7 @@
+# References for NVIDIA CUDA GPU capabilities:
+# https://developer.nvidia.com/cuda/gpus
+# https://developer.nvidia.com/cuda/gpus/legacy
+
 import logging
 import platform
 import subprocess
@@ -102,12 +106,19 @@ def get_optimal_device_settings(hardware_info: Dict[str, Any]) -> Dict[str, Any]
     if hardware_info["gpus"]["nvidia"].get("available"):
         nvidia_gpus = hardware_info["gpus"]["nvidia"].get("devices", [])
         settings["device"] = "cuda"
-        if any(gpu.get("is_rtx") or gpu.get("major", 0) >= 7 for gpu in nvidia_gpus):
-            settings["compute_type"] = "float16"
+        # Check for newer GPUs (Volta, Turing, Ampere, etc. - compute capability >= 7.0)
+        # These typically have efficient FP16 and INT8 (Tensor Cores)
+        if any(gpu.get("major", 0) >= 7 for gpu in nvidia_gpus):
+            # int8_float16 often provides the best performance for these GPUs
+            settings["compute_type"] = "int8_float16"
             settings["beam_size"] = 5
+            logger.info("Newer NVIDIA GPU (compute capability >= 7.0) detected. Using compute_type: 'int8_float16' for optimal performance.")
         else:
-            settings["compute_type"] = "float16"
+            # Older NVIDIA GPUs (Pascal, Maxwell, etc. - compute capability < 7.0)
+            # FP16 is not efficient; int8 is generally the best compromise.
+            settings["compute_type"] = "int8"
             settings["beam_size"] = 3
+            logger.info("Older NVIDIA GPU (compute capability < 7.0) detected. Using compute_type: 'int8' for efficiency.")
         logger.info(
             f"NVIDIA GPU detected. Using device: '{settings['device']}' with compute_type: '{settings['compute_type']}'"
         )
@@ -120,7 +131,10 @@ def get_optimal_device_settings(hardware_info: Dict[str, Any]) -> Dict[str, Any]
             "Falling back to CPU for transcription. Consider community ROCm solutions for better performance."
         )
     else:
-        logger.info("No supported GPU detected. Using CPU for transcription.")
+        settings["device"] = "cpu"
+        settings["compute_type"] = "int8"
+        settings["beam_size"] = 1
+        logger.info("No supported GPU detected. Using CPU for transcription with compute_type: 'int8'.")
 
     return settings
 
