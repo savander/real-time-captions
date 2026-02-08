@@ -7,17 +7,20 @@
 
 ## Overview
 
-"Real-Time Captions" provides real-time captions from system audio. This application not only transcribes spoken content but also automatically translates it into English from various languages, even when background music is present.
+**"Real-Time Captions"** provides real-time captions from system audio. This application not only transcribes spoken content but also automatically translates it into English from various languages, even when background music is present.
 
-The robust translation feature is ideal for understanding content from non-English sources, such as live streams (e.g., Twitch streamers), foreign-language movies or shows, and international online meetings. It supports a wide array of languages for translation, including: af, am, ar, as, az, ba, be, bg, bn, bo, br, bs, ca, cs, cy, da, de, el, en, es, et, eu, fa, fi, fo, fr, gl, gu, ha, haw, he, hi, hr, ht, hu, hy, id, is, it, ja, jw, ka, kk, km, kn, ko, la, lb, ln, lo, lt, lv, mg, mi, mk, ml, mn, mr, ms, mt, my, ne, nl, nn, no, oc, pa, pl, ps, pt, ro, ru, sa, sd, si, sk, sl, sn, so, sq, sr, su, sv, sw, ta, te, tg, th, tk, tl, tr, tt, uk, ur, uz, vi, yi, yo, zh, yue.
+The robust translation feature is ideal for understanding content from non-English sources, such as live streams (e.g., Twitch streamers), foreign-language movies or shows, and international online meetings. It supports a wide array of languages for translation, including: 
+```
+af, am, ar, as, az, ba, be, bg, bn, bo, br, bs, ca, cs, cy, da, de, el, en, es, et, eu, fa, fi, fo, fr, gl, gu, ha, haw, he, hi, hr, ht, hu, hy, id, is, it, ja, jw, ka, kk, km, kn, ko, la, lb, ln, lo, lt, lv, mg, mi, mk, ml, mn, mr, ms, mt, my, ne, nl, nn, no, oc, pa, pl, ps, pt, ro, ru, sa, sd, si, sk, sl, sn, so, sq, sr, su, sv, sw, ta, te, tg, th, tk, tl, tr, tt, uk, ur, uz, vi, yi, yo, zh, yue
+```
 
 While powerful, it's important to note that automatic translation is not always 100% accurate, and its effectiveness can vary depending on audio quality and speech complexity.
 
-All transcription and translation capabilities are powered by local models. This means the application operates entirely offline, ensuring user privacy and offering a completely free solution without reliance on external APIs or services.
+All transcription and translation capabilities are powered by **local models**. This means the application operates entirely *offline*, ensuring user privacy and offering a completely free solution without reliance on external APIs or services.
 
-Under the hood, "Real-Time Captions" uses `faster-whisper` for efficient speech-to-text, `PyQt6` for its graphical user interface, and `torch`/`transformers` for its AI models. A worker process is always spawned. In GUI mode, this worker communicates via Inter-Process Communication (IPC) to send captions to the UI. When running in standalone worker mode (`--worker`), the worker prints captions directly to the console.
+Under the hood, **"Real-Time Captions"** uses `faster-whisper` for efficient speech-to-text, `PyQt6` for its graphical user interface, and `torch`/`transformers` for its AI models. A worker process is always spawned. In GUI mode, this worker communicates via Inter-Process Communication (IPC) to send captions to the UI. When running in standalone worker mode (`--worker`), the worker prints captions directly to the console.
 
-Please be aware there's an inherent delay of approximately 2-3 seconds between spoken audio and its transcription appearing.
+Please be aware there's an inherent **delay of approximately 2-3 seconds** between spoken audio and its transcription appearing.
 
 ## Showcase
 
@@ -27,7 +30,8 @@ Here's an example of the real-time captions in action:
 
 ## Getting Started
 
-To begin, first ensure you have `uv` installed. If not, you can obtain it from the [uv documentation](https://github.com/astral-sh/uv). Once `uv` is ready, install the project dependencies by running:
+To begin, first ensure you have `uv` installed. If not, you can obtain it from the [uv documentation](https://github.com/astral-sh/uv). 
+Once `uv` is ready, install the project dependencies by running:
 ```bash
 uv sync
 ```
@@ -78,7 +82,7 @@ The subtitle window offers various customization options through mouse interacti
 
 | Action                    | Shortcut                            | Description                                        |
 | :------------------------ | :---------------------------------- | :------------------------------------------------- |
-| **Move Window**           | Click and drag                      | Repositions the window on your screen.             |
+| **Move Window**           | Click and drag *anywhere on the window* | Repositions the window on your screen.             |
 | **Resize Window**         | Drag bottom-right grip              | Adjusts the window's size.                         |
 | **Change Font Size**      | Scroll wheel                        | Increases or decreases the subtitle font size.     |
 | **Adjust Background Opacity** | Ctrl + Scroll wheel                 | Modifies the background opacity.                   |
@@ -88,15 +92,22 @@ The subtitle window offers various customization options through mouse interacti
 
 For users with systems that have limited resources (such as older CPUs, less RAM, or integrated GPUs), optimizing performance is key. Consider these options:
 
-*   **Utilize smaller models**: Models like `tiny` or `base` are significantly less resource-intensive compared to `small`, `medium`, or `large`.
+**Specify the language**: If the source language is known, explicitly setting the `--language` argument (e.g., `--language en`) can improve performance by bypassing the automatic language detection process, which can be resource-intensive.
+    ```bash
+    uv run real-time-captions --language en
+    ```
+    
+**Utilize smaller models**: Models like `tiny` or `base` are significantly less resource-intensive compared to `small`, `medium`, or `large`. *However, 'tiny' and 'base' models offer lower transcription quality. Aim for the 'small' model if your system resources permit for better accuracy.*
     ```bash
     uv run real-time-captions --model-size tiny
     ```
-*   **Force CPU usage**: In some cases, forcing the application to use the CPU, even if a low-end or integrated GPU is present, might provide more stability, though it can sometimes result in slower performance.
+    
+**Force CPU usage**: In some cases, forcing the application to use the CPU, even if a low-end or integrated GPU is present, might provide more stability, though it can sometimes result in slower performance.
     ```bash
     uv run real-time-captions --cpu
     ```
-*   **Limit CPU RAM**: If you have abundant RAM but want to influence the model selection on the CPU to favor smaller models, you can restrict the perceived RAM. This helps the system choose models more appropriate for your actual usage.
+    
+**Limit CPU RAM**: If you have abundant RAM but want to influence the model selection on the CPU to favor smaller models, you can restrict the perceived RAM. This helps the system choose models more appropriate for your actual usage.
     ```bash
     uv run real-time-captions --max-cpu-ram-gb 8
     ```
