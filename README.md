@@ -1,8 +1,7 @@
 # Real-Time Captions
 
-## IMPORTANT INFORMATION
-
-This project was developed with the assistance of an AI Agent and is intended for personal use.
+> [!CAUTION]
+> This project was developed with the assistance of an AI Agent and is intended for personal use.
 
 ## Overview
 
