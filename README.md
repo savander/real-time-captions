@@ -43,7 +43,11 @@ For all command-line options and available language codes, use `uv run real-time
 
 ## Core Technologies
 
-*   **Speech-to-Text**: `faster-whisper`
+*   **Speech-to-Text**: [faster-whisper](https://github.com/SYSTRAN/faster-whisper) (models from [Hugging Face](https://huggingface.co/Systran/faster-whisper-large-v3))
 *   **User Interface**: `PyQt6`
 *   **AI/ML Models**: `torch`, `transformers`
 *   **Package Management**: `uv`
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
