@@ -5,6 +5,19 @@
 >
 > I built the architecture and mapped out the logic for this project myself, but I let an AI handle the actual coding. It’s a "vibe coded" experiment meant for my own personal use, so it definitely isn't production-ready. Use it at your own risk!
 
+## Table of Contents
+- [Overview](#overview)
+- [Showcase](#showcase)
+- [Getting Started](#getting-started)
+- [Usage](#usage)
+  - [GUI (Graphical Interface)](#gui-graphical-interface)
+  - [Worker (Background Process)](#worker-background-process)
+- [Convenience Script (start.vbs) for Windows](#convenience-script-startvbs-for-windows)
+- [Interacting with the Subtitle Window](#interacting-with-the-subtitle-window)
+- [Recommendations for Lower-End Systems](#recommendations-for-lower-end-systems)
+- [Core Technologies](#core-technologies)
+- [License](#license)
+
 ## Overview
 
 **"Real-Time Captions"** provides real-time captions from system audio. This application not only transcribes spoken content but also automatically translates it into English from various languages, even when background music is present.
