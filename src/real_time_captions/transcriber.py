@@ -35,7 +35,6 @@ class TranscriptionEngine:
             self.compute_type = "int8"
             self.beam_size = 1
             self.vad_filter = True
-            self.initial_prompt = "Clean transcript. No hesitation markers."
             logger.info("CPU usage forced by user. Device: 'cpu', Compute Type: 'int8'")
             hardware_info = get_hardware_info()
             self.model_size = (
@@ -54,7 +53,6 @@ class TranscriptionEngine:
             self.compute_type = optimal_settings["compute_type"]
             self.beam_size = optimal_settings["beam_size"]
             self.vad_filter = optimal_settings["vad_filter"]
-            self.initial_prompt = optimal_settings["initial_prompt"]
 
             if model_size_override:
                 self.model_size = model_size_override
@@ -67,7 +65,7 @@ class TranscriptionEngine:
 
             logger.info(f"Detected hardware: {hardware_info}")
             logger.info(
-                f"Using optimal settings: device='{self.device}', compute_type='{self.compute_type}', beam_size='{self.beam_size}', vad_filter='{self.vad_filter}', initial_prompt='{self.initial_prompt}'"
+                f"Using optimal settings: device='{self.device}', compute_type='{self.compute_type}', beam_size='{self.beam_size}', vad_filter='{self.vad_filter}'"
             )
 
         logger.info(
@@ -124,7 +122,7 @@ class TranscriptionEngine:
         logger.info(
             "TranscriptionEngine initialized with: "
             f"model_size='{self.model_size}', device='{self.device}', compute_type='{self.compute_type}', "
-            f"beam_size='{self.beam_size}', vad_filter='{self.vad_filter}', initial_prompt='{self.initial_prompt}'"
+            f"beam_size='{self.beam_size}', vad_filter='{self.vad_filter}'"
         )
         logger.info("TranscriptionEngine ready.")
 
@@ -137,7 +135,6 @@ class TranscriptionEngine:
             task="translate",
             beam_size=self.beam_size,
             vad_filter=self.vad_filter,
-            initial_prompt=self.initial_prompt,
         )
 
         return (

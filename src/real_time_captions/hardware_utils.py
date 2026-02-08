@@ -97,7 +97,6 @@ def get_optimal_device_settings(hardware_info: Dict[str, Any]) -> Dict[str, Any]
         "compute_type": "int8",
         "beam_size": 1,
         "vad_filter": True,
-        "initial_prompt": "Clean transcript. No hesitation markers.",
     }
 
     if hardware_info["gpus"]["nvidia"].get("available"):

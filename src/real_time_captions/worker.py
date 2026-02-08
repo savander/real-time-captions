@@ -26,7 +26,6 @@ class WorkerConfig:
     model_size: str = "large-v3"
     beam_size: int = 5
     vad_filter: bool = True
-    initial_prompt: str = "Clean transcript. No ellipses. No hesitation markers."
     model_size_override: Optional[str] = None
     force_cpu: bool = False
     max_cpu_ram_gb: Optional[int] = None
