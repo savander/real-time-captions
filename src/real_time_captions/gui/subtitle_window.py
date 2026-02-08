@@ -196,7 +196,7 @@ class SubtitleWindow(QMainWindow):
 
         if modifiers == Qt.KeyboardModifier.ControlModifier:
             self._bg_opacity = max(
-                0, min(self._bg_opacity + (15 if delta > 0 else -15), 255)
+                1, min(self._bg_opacity + (15 if delta > 0 else -15), 255)
             )
             self._toast.show_message(f"Bg: {int((self._bg_opacity / 255) * 100)}%")
         elif modifiers == Qt.KeyboardModifier.ShiftModifier:

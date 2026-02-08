@@ -7,11 +7,17 @@
 
 ## Overview
 
-"Real-Time Captions" generates real-time captions from system audio. It uses `faster-whisper` for efficient speech-to-text, `PyQt6` for the GUI, and `torch`/`transformers` for AI models.
+"Real-Time Captions" provides real-time captions from system audio. This application not only transcribes spoken content but also automatically translates it into English from various languages, even when background music is present.
 
-A worker process is always spawned. In GUI mode, this worker communicates via Inter-Process Communication (IPC) to send captions to the UI. When run in standalone worker mode (`--worker`), the worker directly prints the captions to the console.
+The robust translation feature is ideal for understanding content from non-English sources, such as live streams (e.g., Twitch streamers), foreign-language movies or shows, and international online meetings. It supports a wide array of languages for translation, including: af, am, ar, as, az, ba, be, bg, bn, bo, br, bs, ca, cs, cy, da, de, el, en, es, et, eu, fa, fi, fo, fr, gl, gu, ha, haw, he, hi, hr, ht, hu, hy, id, is, it, ja, jw, ka, kk, km, kn, ko, la, lb, ln, lo, lt, lv, mg, mi, mk, ml, mn, mr, ms, mt, my, ne, nl, nn, no, oc, pa, pl, ps, pt, ro, ru, sa, sd, si, sk, sl, sn, so, sq, sr, su, sv, sw, ta, te, tg, th, tk, tl, tr, tt, uk, ur, uz, vi, yi, yo, zh, yue.
 
-**Note**: There is an inherent delay of approximately 2-3 seconds between the spoken audio and its transcription appearing.
+While powerful, it's important to note that automatic translation is not always 100% accurate, and its effectiveness can vary depending on audio quality and speech complexity.
+
+All transcription and translation capabilities are powered by local models. This means the application operates entirely offline, ensuring user privacy and offering a completely free solution without reliance on external APIs or services.
+
+Under the hood, "Real-Time Captions" uses `faster-whisper` for efficient speech-to-text, `PyQt6` for its graphical user interface, and `torch`/`transformers` for its AI models. A worker process is always spawned. In GUI mode, this worker communicates via Inter-Process Communication (IPC) to send captions to the UI. When running in standalone worker mode (`--worker`), the worker prints captions directly to the console.
+
+Please be aware there's an inherent delay of approximately 2-3 seconds between spoken audio and its transcription appearing.
 
 ## Showcase
 
@@ -19,81 +25,83 @@ Here's an example of the real-time captions in action:
 
 ![Real-Time Captions in action](docs/example.png)
 
-## How to Get Started
+## Getting Started
 
-1.  **Install `uv`**: If you don't have `uv` (a fast Python package installer and manager), get it from [uv documentation](https://github.com/astral-sh/uv).
-2.  **Install Dependencies**:
-    ```bash
-    uv sync
-    ```
+To begin, first ensure you have `uv` installed. If not, you can obtain it from the [uv documentation](https://github.com/astral-sh/uv). Once `uv` is ready, install the project dependencies by running:
+```bash
+uv sync
+```
 
 ## Usage
 
 ### GUI (Graphical Interface)
 
-To start the application with the graphical user interface:
+Launch the application with its graphical user interface:
 ```bash
 uv run real-time-captions
 ```
-You can specify a language or model size:
+You can customize the experience by specifying a language or model size:
 ```bash
 uv run real-time-captions --language en --model-size base
 ```
+Setting the `--language` argument forces the AI to transcribe in the specified language. This can improve performance as the AI does not need to detect the language for each transcription.
 
 ### Worker (Background Process)
 
-To run the transcription worker process without the GUI (e.g., for background tasks or debugging):
+For background tasks or debugging without the GUI, run the transcription worker process:
 ```bash
 uv run real-time-captions --worker
 ```
-The worker also accepts language and model options:
+Similar to the GUI, the worker accepts language and model options:
 ```bash
 uv run real-time-captions --worker --language pl --cpu
 ```
-For all command-line options and available language codes, use `uv run real-time-captions --help`.
+Setting the `--language` argument forces the AI to transcribe in the specified language. This can improve performance as the AI does not need to detect the language for each transcription.
+For a comprehensive list of command-line options and available language codes, use `uv run real-time-captions --help`.
 
-## Convenience Script (`start.vbs`)
+## Convenience Script (`start.vbs`) for Windows
 
-For Windows users, `start.vbs` provides a way to launch the GUI application without displaying a command prompt window. This VBScript simply executes the command `uv run real-time-captions` in the background.
+Windows users can utilize `start.vbs` to launch the GUI application without a visible command prompt window. This VBScript simply executes the `uv run real-time-captions` command in the background.
 
-You can create a shortcut to `start.vbs` and place it on your desktop or in your Start Menu for easy access.
+For quick access, you can create a shortcut to `start.vbs` and place it on your desktop or in your Start Menu.
 
-If you wish to include default arguments (e.g., `--language en --model-size base`), you can edit the `start.vbs` file in a text editor. Change the line:
+Should you wish to include default arguments (e.g., `--language en --model-size base`), you can edit the `start.vbs` file in any text editor. Locate the line:
 `WshShell.Run "uv run real-time-captions", 0, False`
-to, for example:
+and modify it to include your desired arguments, for example:
 `WshShell.Run "uv run real-time-captions --language en --model-size base", 0, False`
 
-**Note**: At present, `start.vbs` does not work correctly when launched via PowerToys Run.
+**Note**: `start.vbs` currently does not function correctly when launched via PowerToys Run.
 
 ## Interacting with the Subtitle Window
 
-The subtitle window can be customized using mouse interactions:
+The subtitle window offers various customization options through mouse interactions:
 
-*   **Move Window**: Click and drag anywhere on the window (except the bottom-right corner) to reposition it.
-*   **Resize Window**: Hover over the window to reveal a small grip in the bottom-right corner. Click and drag this grip to resize the window.
-*   **Change Font Size**: Use the **scroll wheel** over the window to increase or decrease the subtitle font size.
-*   **Adjust Background Opacity**: Hold **Ctrl** and use the **scroll wheel** to change the background opacity of the subtitle window.
-*   **Adjust Number of Lines**: Hold **Shift** and use the **scroll wheel** to adjust the number of subtitle lines displayed simultaneously.
+*   **Moving the Window**: Click and drag anywhere on the window (excluding the bottom-right corner) to reposition it on your screen.
+*   **Resizing the Window**: A small grip appears in the bottom-right corner when you hover over the window. Click and drag this grip to adjust the window's size.
+*   **Changing Font Size**: Use the **scroll wheel** over the window to easily increase or decrease the subtitle font size.
+*   **Adjusting Background Opacity**: Hold down **Ctrl** and use the **scroll wheel** to modify the background opacity of the subtitle window.
+*   **Controlling Number of Lines**: Hold down **Shift** and use the **scroll wheel** to adjust how many subtitle lines are displayed simultaneously.
 
 ## Recommendations for Lower-End Systems
 
-For systems with limited resources (e.g., older CPUs, less RAM, no dedicated GPU), consider the following options to optimize performance:
+For users with systems that have limited resources (such as older CPUs, less RAM, or integrated GPUs), optimizing performance is key. Consider these options:
 
-*   **Use smaller models**: The `tiny` or `base` models are less resource-intensive than `small`, `medium`, or `large`.
+*   **Utilize smaller models**: Models like `tiny` or `base` are significantly less resource-intensive compared to `small`, `medium`, or `large`.
     ```bash
     uv run real-time-captions --model-size tiny
     ```
-*   **Force CPU usage**: If you have a low-end or integrated GPU, forcing the application to use the CPU might sometimes be more stable, though generally slower.
+*   **Force CPU usage**: In some cases, forcing the application to use the CPU, even if a low-end or integrated GPU is present, might provide more stability, though it can sometimes result in slower performance.
     ```bash
     uv run real-time-captions --cpu
     ```
-*   **Limit CPU RAM**: If you have a lot of RAM but want to simulate a lower-memory environment for model selection on CPU, you can restrict the perceived RAM. This can help the system pick smaller, more appropriate models for your actual usage.
+*   **Limit CPU RAM**: If you have abundant RAM but want to influence the model selection on the CPU to favor smaller models, you can restrict the perceived RAM. This helps the system choose models more appropriate for your actual usage.
     ```bash
     uv run real-time-captions --max-cpu-ram-gb 8
     ```
 
 ## Core Technologies
 
+The project relies on these key technologies:
 *   **Speech-to-Text**: [faster-whisper](https://github.com/SYSTRAN/faster-whisper) (models from [Hugging Face](https://huggingface.co/Systran/faster-whisper-large-v3))
 *   **User Interface**: [PyQt6](https://www.riverbankcomputing.com/software/pyqt/)
 *   **AI/ML Models**: [torch](https://pytorch.org/), [transformers](https://huggingface.co/docs/transformers/)
