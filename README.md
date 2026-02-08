@@ -1,8 +1,9 @@
 # Real-Time Captions
 
 > [!CAUTION]
-> This project was developed with the assistance of an AI Agent and is intended for personal use.
-
+> **Experimental / Personal Use Only** 
+>
+> I built the architecture and mapped out the logic for this project myself, but I let an AI handle the actual coding. It’s a "vibe coded" experiment meant for my own personal use, so it definitely isn't production-ready. Use it at your own risk!
 ## Overview
 
 "Real-Time Captions" generates real-time captions from system audio. It uses `faster-whisper` for efficient speech-to-text, `PyQt6` for the GUI, and `torch`/`transformers` for AI models. It runs in either a GUI or a background worker mode.
