@@ -124,6 +124,13 @@ def parse_arguments(argv: Sequence[str] | None = None):
         type=str,
         default=None,
         help="Override automatic model size detection (e.g., tiny, base, small, medium, large-v3)",
+        choices=[
+            "tiny", "tiny.en",
+            "base", "base.en",
+            "small", "small.en",
+            "medium", "medium.en",
+            "large", "large-v1", "large-v2", "large-v3"
+        ],
     )
 
     parser.add_argument(
