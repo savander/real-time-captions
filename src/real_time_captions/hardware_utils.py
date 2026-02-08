@@ -128,7 +128,7 @@ def get_optimal_device_settings(hardware_info: Dict[str, Any]) -> Dict[str, Any]
         settings["beam_size"] = 1
         logger.warning(
             "AMD GPU detected, but native acceleration is not supported by faster-whisper. "
-            "Falling back to CPU for transcription. Consider community ROCm solutions for better performance."
+            "Falling back to CPU for transcription. This application does not currently support ROCm solutions for AMD GPUs."
         )
     else:
         settings["device"] = "cpu"
