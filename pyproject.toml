@@ -1,0 +1,32 @@
+[project]
+name = "real-time-captions"
+version = "0.1.0"
+description = "Real-time captions generator from system audio."
+authors = [
+    { name = "Adam Jaworski" }
+]
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "faster-whisper>=1.2.1",
+    "numpy<2.0.0",
+    "protobuf>=6.33.5",
+    "pyqt6>=6.10.2",
+    "rich>=14.3.2",
+    "sentencepiece>=0.2.1",
+    "soundcard>=0.4.5",
+    "torch>=2.6.0",
+    "transformers>=5.1.0",
+    "platformdirs>=4.2.0",
+    "psutil>=5.9.0",
+    "huggingface_hub>=0.20.0",
+]
+
+[project.scripts]
+real-time-captions = "real_time_captions:main"
+
+[[tool.uv.index]]
+url = "https://download.pytorch.org/whl/cu124"
+
+[build-system]
+requires = ["uv_build>=0.10.0,<0.11.0"]
+build-backend = "uv_build"
