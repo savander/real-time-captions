@@ -47,10 +47,24 @@ Here's an example of the real-time captions in action:
 
 ## Getting Started
 
-To begin, first ensure you have `uv` installed. If not, you can obtain it from the [uv documentation](https://github.com/astral-sh/uv).   
-Once `uv` is ready, install the project dependencies by running:
+To get started with Real-Time Captions, follow these steps:
+
+1.  **Clone the repository**:
+```bash
+git clone https://github.com/savander/real-time-captions.git
+cd real-time-captions
+```
+
+2.  **Install `uv`**: If you don't have `uv` installed, follow the instructions [here](https://docs.astral.sh/uv/getting-started/installation/).
+
+3.  **Install dependencies**: Once `uv` is ready, install the project dependencies:
 ```bash
 uv sync
+```
+
+4.  **Launch the application**:
+```bash
+uv run real-time-captions
 ```
 
 ## Usage
