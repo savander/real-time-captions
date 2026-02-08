@@ -34,7 +34,7 @@ Here's an example of the real-time captions in action:
 
 ## Getting Started
 
-To begin, first ensure you have `uv` installed. If not, you can obtain it from the [uv documentation](https://github.com/astral-sh/uv). 
+To begin, first ensure you have `uv` installed. If not, you can obtain it from the [uv documentation](https://github.com/astral-sh/uv).   
 Once `uv` is ready, install the project dependencies by running:
 ```bash
 uv sync
@@ -64,7 +64,7 @@ Similar to the GUI, the worker accepts language and model options:
 ```bash
 uv run real-time-captions --worker --language pl --cpu
 ```
-Setting the `--language` argument forces the AI to transcribe in the specified language. This can improve performance as the AI does not need to detect the language for each transcription.
+Setting the `--language` argument forces the AI to transcribe in the specified language. This can improve performance as the AI does not need to detect the language for each transcription.  
 For a comprehensive list of command-line options and available language codes, use `uv run real-time-captions --help`.
 
 ## Convenience Script (`start.vbs`) for Windows
@@ -73,10 +73,10 @@ Windows users can utilize `start.vbs` to launch the GUI application without a vi
 
 For quick access, you can create a shortcut to `start.vbs` and place it on your desktop or in your Start Menu.
 
-Should you wish to include default arguments (e.g., `--language en --model-size base`), you can edit the `start.vbs` file in any text editor. Locate the line:
-`WshShell.Run "uv run real-time-captions", 0, False`
-and modify it to include your desired arguments, for example:
-`WshShell.Run "uv run real-time-captions --language en --model-size base", 0, False`
+Should you wish to include default arguments (e.g., `--language en --model-size base`), you can edit the `start.vbs` file in any text editor. Locate the line:  
+`WshShell.Run "uv run real-time-captions", 0, False`  
+and modify it to include your desired arguments, for example:  
+`WshShell.Run "uv run real-time-captions --language en --model-size base", 0, False`  
 
 **Note**: `start.vbs` currently does not function correctly when launched via PowerToys Run.
 
