@@ -125,11 +125,18 @@ def parse_arguments(argv: Sequence[str] | None = None):
         default=None,
         help="Override automatic model size detection (e.g., tiny, base, small, medium, large-v3)",
         choices=[
-            "tiny", "tiny.en",
-            "base", "base.en",
-            "small", "small.en",
-            "medium", "medium.en",
-            "large", "large-v1", "large-v2", "large-v3"
+            "tiny",
+            "tiny.en",
+            "base",
+            "base.en",
+            "small",
+            "small.en",
+            "medium",
+            "medium.en",
+            "large",
+            "large-v1",
+            "large-v2",
+            "large-v3",
         ],
     )
 
@@ -158,6 +165,13 @@ def parse_arguments(argv: Sequence[str] | None = None):
     )
 
     parser.add_argument("--worker", action="store_true", help=argparse.SUPPRESS)
+
+    parser.add_argument(
+        "--microphone",
+        "-i",
+        action="store_true",
+        help="Use microphone instead of loopback device for audio capture.",
+    )
 
     args, _ = parser.parse_known_args(argv)
     return args

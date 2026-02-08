@@ -33,6 +33,7 @@ class SubtitleWindow(QMainWindow):
         force_cpu: bool = False,
         max_cpu_ram_gb: Optional[int] = None,
         task: str = "translate",
+        use_microphone: bool = False,
     ):
         super().__init__()
         self._drag_start_position: Optional[QPoint] = None
@@ -45,6 +46,7 @@ class SubtitleWindow(QMainWindow):
         self._force_cpu = force_cpu
         self._max_cpu_ram_gb = max_cpu_ram_gb
         self._task = task
+        self._use_microphone = use_microphone
 
         self._window_flasher = WindowFlasher(
             self, flash_duration_ms=3000, flicker_interval_ms=300
@@ -112,6 +114,8 @@ class SubtitleWindow(QMainWindow):
             cmd.extend(["--max-cpu-ram-gb", str(self._max_cpu_ram_gb)])
         if self._task:
             cmd.extend(["--task", self._task])
+        if self._use_microphone:
+            cmd.append("--microphone")
         self._worker = WorkerThread(cmd)
         self._worker.text_received.connect(self._on_text_received)
         self._worker.status_received.connect(self._on_status_received)

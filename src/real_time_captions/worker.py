@@ -30,6 +30,7 @@ class WorkerConfig:
     force_cpu: bool = False
     max_cpu_ram_gb: Optional[int] = None
     task: str = "translate"
+    use_microphone: bool = False
 
 
 class MessageHandler:
@@ -114,7 +115,10 @@ class AudioWorker:
 
                 MessageHandler.status("Initializing Audio Streamer...")
                 logger.info("AudioWorker: Initializing Audio Streamer...")
-                self.streamer = AudioStreamer(sample_rate=self.config.sample_rate)
+                self.streamer = AudioStreamer(
+                    sample_rate=self.config.sample_rate,
+                    use_microphone=self.config.use_microphone,
+                )
 
             if self._engine_factory:
                 MessageHandler.status("Using provided AI Model engine...")
@@ -237,6 +241,7 @@ def run_worker_logic(
     force_cpu: bool = False,
     max_cpu_ram_gb: Optional[int] = None,
     task: str = "translate",
+    use_microphone: bool = False,
 ) -> None:
     logger.info("Starting AudioWorker logic.")
     config = WorkerConfig(
@@ -244,6 +249,7 @@ def run_worker_logic(
         force_cpu=force_cpu,
         max_cpu_ram_gb=max_cpu_ram_gb,
         task=task,
+        use_microphone=use_microphone,
     )
     worker = AudioWorker(language, config=config)
     worker.run()

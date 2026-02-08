@@ -23,6 +23,7 @@ def main() -> None:
             force_cpu=args.cpu,
             max_cpu_ram_gb=args.max_cpu_ram_gb,
             task=args.task,
+            use_microphone=args.microphone,
         )
     else:
         from .gui import run_gui
@@ -33,4 +34,5 @@ def main() -> None:
             force_cpu=args.cpu,
             max_cpu_ram_gb=args.max_cpu_ram_gb,
             task=args.task,
+            use_microphone=args.microphone,
         )

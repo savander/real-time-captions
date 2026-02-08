@@ -14,6 +14,7 @@ def run_gui(
     force_cpu: bool = False,
     max_cpu_ram_gb: Optional[int] = None,
     task: str = "translate",
+    use_microphone: bool = False,
 ):
     """
     Entry point to start the subtitle overlay.
@@ -28,6 +29,7 @@ def run_gui(
         force_cpu=force_cpu,
         max_cpu_ram_gb=max_cpu_ram_gb,
         task=task,
+        use_microphone=use_microphone,
     )
     window.show()
 
