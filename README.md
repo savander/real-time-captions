@@ -76,11 +76,13 @@ and modify it to include your desired arguments, for example:
 
 The subtitle window offers various customization options through mouse interactions:
 
-*   **Moving the Window**: Click and drag anywhere on the window (excluding the bottom-right corner) to reposition it on your screen.
-*   **Resizing the Window**: A small grip appears in the bottom-right corner when you hover over the window. Click and drag this grip to adjust the window's size.
-*   **Changing Font Size**: Use the **scroll wheel** over the window to easily increase or decrease the subtitle font size.
-*   **Adjusting Background Opacity**: Hold down **Ctrl** and use the **scroll wheel** to modify the background opacity of the subtitle window.
-*   **Controlling Number of Lines**: Hold down **Shift** and use the **scroll wheel** to adjust how many subtitle lines are displayed simultaneously.
+| Action                    | Shortcut                            | Description                                        |
+| :------------------------ | :---------------------------------- | :------------------------------------------------- |
+| **Move Window**           | Click and drag                      | Repositions the window on your screen.             |
+| **Resize Window**         | Drag bottom-right grip              | Adjusts the window's size.                         |
+| **Change Font Size**      | Scroll wheel                        | Increases or decreases the subtitle font size.     |
+| **Adjust Background Opacity** | Ctrl + Scroll wheel                 | Modifies the background opacity.                   |
+| **Control Number of Lines** | Shift + Scroll wheel                | Adjusts how many subtitle lines are displayed.     |
 
 ## Recommendations for Lower-End Systems
 
