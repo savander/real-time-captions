@@ -1,6 +1,5 @@
 import logging
 import math
-import time
 from collections import deque
 from typing import TYPE_CHECKING, Optional
 
@@ -24,7 +23,6 @@ class SubtitleDisplayWidget(QLabel):
         self._main_window_parent = main_window_parent
         self._segments: list[config.WordSegment] = []
         self._pending_words: deque[tuple[str, int]] = deque()
-        self._last_update_time = time.time()
         self._current_batch_id = 0
 
         self._font_size = config.DEFAULT_FONT_SIZE
@@ -66,16 +64,9 @@ class SubtitleDisplayWidget(QLabel):
         self._main_window_parent.reposition_subtitle_display()
 
     def receive_new_text(self, new_text: str):
-        current_time = time.time()
-        if current_time - self._last_update_time > config.TEXT_TIMEOUT_SECONDS:
-            self._segments.clear()
-            self._pending_words.clear()
-            self._current_batch_id = 0
-
         self._current_batch_id += 1
         for word in new_text.split():
             self._pending_words.append((word, self._current_batch_id))
-        self._last_update_time = current_time
 
     def _process_next_word(self):
         if not self._pending_words:

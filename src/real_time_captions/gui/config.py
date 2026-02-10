@@ -14,7 +14,6 @@ DEFAULT_BG_OPACITY: Final = 180
 FONT_FAMILY: Final = "Arial"
 
 # Logic Settings
-TEXT_TIMEOUT_SECONDS: Final = 5.0
 MODULE_NAME: Final = "real_time_captions"
 CONFIG_DIR: Final = Path(user_config_dir(APP_NAME, APP_AUTHOR))
 CONFIG_FILE: Final = CONFIG_DIR / "window_config.json"

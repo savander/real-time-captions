@@ -113,8 +113,12 @@ class AudioWorker:
             else:
                 from .capture import AudioStreamer
 
-                MessageHandler.status("Initializing Audio Streamer...")
-                logger.info("AudioWorker: Initializing Audio Streamer...")
+                MessageHandler.status(
+                    "Initializing Audio Streamer (It can take a while)..."
+                )
+                logger.info(
+                    "AudioWorker: Initializing Audio Streamer (It can take a while)..."
+                )
                 self.streamer = AudioStreamer(
                     sample_rate=self.config.sample_rate,
                     use_microphone=self.config.use_microphone,
