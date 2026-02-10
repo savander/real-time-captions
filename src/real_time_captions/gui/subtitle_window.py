@@ -7,6 +7,7 @@ from PyQt6.QtCore import QEvent, QPoint, QRectF, Qt
 from PyQt6.QtGui import (
     QCloseEvent,
     QColor,
+    QCursor,
     QEnterEvent,
     QMouseEvent,
     QPainter,
@@ -14,7 +15,7 @@ from PyQt6.QtGui import (
     QResizeEvent,
     QWheelEvent,
 )
-from PyQt6.QtWidgets import QApplication, QLabel, QMainWindow, QSizeGrip, QWidget
+from PyQt6.QtWidgets import QApplication, QLabel, QMainWindow, QWidget
 
 from . import config
 from .subtitle_display_widget import SubtitleDisplayWidget
@@ -37,6 +38,8 @@ class SubtitleWindow(QMainWindow):
     ):
         super().__init__()
         self._drag_start_position: Optional[QPoint] = None
+        self._resize_edge: Optional[int] = None
+        self._resize_margin = 10
         self._is_hovered = False
         self._font_size = config.DEFAULT_FONT_SIZE
         self._max_batches = config.DEFAULT_MAX_BATCHES
@@ -78,13 +81,12 @@ class SubtitleWindow(QMainWindow):
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
 
         self._container = QWidget()
+        self._container.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
         self.setCentralWidget(self._container)
 
         self._subtitle_display = SubtitleDisplayWidget(self, self._container)
 
-        self._size_grip = QSizeGrip(self)
-        self._size_grip.setFixedSize(20, 20)
-        self._size_grip.hide()
+        self.setMouseTracking(True)
 
         self._close_btn = CloseButton(self)
         self._close_btn.clicked.connect(self.close)
@@ -161,6 +163,22 @@ class SubtitleWindow(QMainWindow):
         self._subtitle_display.clear_text()
         self._toast.show_message("Cleared")
 
+    def _hit_test(self, pos: QPoint) -> int:
+        rect = self.rect()
+        result = 0
+
+        if pos.x() < self._resize_margin:
+            result |= 1  # Left
+        elif pos.x() > rect.width() - self._resize_margin:
+            result |= 2  # Right
+
+        if pos.y() < self._resize_margin:
+            result |= 4  # Top
+        elif pos.y() > rect.height() - self._resize_margin:
+            result |= 8  # Bottom
+
+        return result
+
     def paintEvent(self, a0: Optional[QEvent]):
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
@@ -179,21 +197,18 @@ class SubtitleWindow(QMainWindow):
         self._is_hovered = True
         self._close_btn.show()
         self._clear_btn.show()
-        self._size_grip.show()
         self.update()
 
     def leaveEvent(self, a0: Optional[QEvent]):
         self._is_hovered = False
         self._close_btn.hide()
         self._clear_btn.hide()
-        self._size_grip.hide()
         self.update()
 
     def resizeEvent(self, a0: Optional[QResizeEvent]):
         super().resizeEvent(a0)
         self._close_btn.move(self.width() - 35, 10)
         self._clear_btn.move(self.width() - 70, 10)
-        self._size_grip.move(self.width() - 20, self.height() - 20)
         self.reposition_subtitle_display()
 
     def wheelEvent(self, a0: Optional[QWheelEvent]):
@@ -225,21 +240,71 @@ class SubtitleWindow(QMainWindow):
         a0.accept()
 
     def mousePressEvent(self, a0: Optional[QMouseEvent]):
-        if (
-            a0
-            and a0.button() == Qt.MouseButton.LeftButton
-            and not self._size_grip.underMouse()
-        ):
+        if not a0 or a0.button() != Qt.MouseButton.LeftButton:
+            return
+
+        self._resize_edge = self._hit_test(a0.pos())
+        if self._resize_edge:
             self._drag_start_position = a0.globalPosition().toPoint()
+            self._resize_start_geometry = self.geometry()
+        else:
+            self._drag_start_position = a0.globalPosition().toPoint()
+            self._resize_edge = None
 
     def mouseMoveEvent(self, a0: Optional[QMouseEvent]):
-        if a0 and self._drag_start_position is not None:
+        if not a0:
+            return
+
+        # Update cursor when not dragging
+        if not a0.buttons() & Qt.MouseButton.LeftButton:
+            edge = self._hit_test(a0.pos())
+            if edge in (1, 2):  # Left, Right
+                self.setCursor(Qt.CursorShape.SizeHorCursor)
+            elif edge in (4, 8):  # Top, Bottom
+                self.setCursor(Qt.CursorShape.SizeVerCursor)
+            elif edge in (5, 10):  # TopLeft, BottomRight
+                self.setCursor(Qt.CursorShape.SizeFDiagCursor)
+            elif edge in (6, 9):  # TopRight, BottomLeft
+                self.setCursor(Qt.CursorShape.SizeBDiagCursor)
+            else:
+                self.setCursor(Qt.CursorShape.ArrowCursor)
+            return
+
+        if self._resize_edge and self._drag_start_position is not None:
+            delta = a0.globalPosition().toPoint() - self._drag_start_position
+            geo = self._resize_start_geometry
+            new_left = geo.x()
+            new_top = geo.y()
+            new_width = geo.width()
+            new_height = geo.height()
+
+            min_w = self.minimumWidth()
+            min_h = self.minimumHeight()
+
+            if self._resize_edge & 1:  # Left
+                new_width = max(min_w, geo.width() - delta.x())
+                new_left = geo.x() + geo.width() - new_width
+            elif self._resize_edge & 2:  # Right
+                new_width = max(min_w, geo.width() + delta.x())
+
+            if self._resize_edge & 4:  # Top
+                new_height = max(min_h, geo.height() - delta.y())
+                new_top = geo.y() + geo.height() - new_height
+            elif self._resize_edge & 8:  # Bottom
+                new_height = max(min_h, geo.height() + delta.y())
+
+            self.setGeometry(new_left, new_top, new_width, new_height)
+
+        elif self._drag_start_position is not None:
             delta = a0.globalPosition().toPoint() - self._drag_start_position
             self.move(self.pos() + delta)
             self._drag_start_position = a0.globalPosition().toPoint()
 
     def mouseReleaseEvent(self, a0: Optional[QMouseEvent]):
         self._drag_start_position = None
+        self._resize_edge = None
+        if not self.rect().contains(self.mapFromGlobal(QCursor.pos())):
+            self.setCursor(Qt.CursorShape.ArrowCursor)
 
     def closeEvent(self, a0: Optional[QCloseEvent]):
         self._save_window_state()
