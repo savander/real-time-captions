@@ -103,25 +103,32 @@ class SubtitleDisplayWidget(QLabel):
         self.move(margin_side, new_y)
 
     def _update_display(self):
-        unique_batches = sorted(
-            list(set(s["batch_id"] for s in self._segments)), reverse=True
-        )
-        kept_batches = unique_batches[: self._max_batches]
-
-        if kept_batches:
-            oldest = kept_batches[-1]
-            while self._segments and self._segments[0]["batch_id"] < oldest:
-                self._segments.pop(0)
-
         if not self._segments:
             self.setText("")
             self._main_window_parent.reposition_subtitle_display()
             return
 
-        newest_id = unique_batches[0]
+        unique_batches = sorted(
+            list(set(s["batch_id"] for s in self._segments)), reverse=True
+        )
+        kept_batches = unique_batches[: self._max_batches]
+
+        display_segments = self._segments
+        if kept_batches:
+            oldest_kept_batch_id = kept_batches[-1]
+            display_segments = [
+                s for s in self._segments if s["batch_id"] >= oldest_kept_batch_id
+            ]
+
+        if not display_segments:
+            self.setText("")
+            self._main_window_parent.reposition_subtitle_display()
+            return
+
+        newest_id = unique_batches[0] if unique_batches else 0
         grouped = []
         cur_group, cur_id = [], -1
-        for s in self._segments:
+        for s in display_segments:
             if s["batch_id"] != cur_id:
                 if cur_group:
                     grouped.append((cur_id, cur_group))
