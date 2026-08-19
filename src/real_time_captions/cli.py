@@ -31,12 +31,25 @@ class _SmokeAsrBackend:
 
 
 class _SmokeTranslationBackend:
+    _translations = {
+        'Dobr\u00fd den': 'Dzie\u0144 dobry',
+        'sv\u011bte': '\u015bwiecie',
+    }
+
     def translate(self, request: TranslationRequest) -> TranslationResult:
         return TranslationResult(
             request.session_id,
             request.sequence,
-            committed='Dzie\u0144 dobry' if request.committed else '',
-            provisional='Dzie\u0144 dobry' if request.provisional else '',
+            committed=(
+                self._translations[request.committed]
+                if request.committed
+                else ''
+            ),
+            provisional=(
+                self._translations[request.provisional]
+                if request.provisional
+                else ''
+            ),
         )
 
 

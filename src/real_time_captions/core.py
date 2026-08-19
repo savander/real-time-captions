@@ -51,12 +51,20 @@ class RealtimeCaptionCore:
         if active is None:
             return self.snapshot()
 
-        snapshot = self._process(active)
-        pending = self._scheduler.complete(active.session_id, active.sequence)
-        while pending is not None:
-            snapshot = self._process(pending)
-            pending = self._scheduler.complete(pending.session_id, pending.sequence)
-        return snapshot
+        try:
+            snapshot = self._process(active)
+            pending = self._scheduler.complete(
+                active.session_id, active.sequence
+            )
+            while pending is not None:
+                snapshot = self._process(pending)
+                pending = self._scheduler.complete(
+                    pending.session_id, pending.sequence
+                )
+            return snapshot
+        except Exception:
+            self._scheduler.reset()
+            raise
 
     def _process(self, request: InferenceRequest) -> CaptionSnapshot:
         hypothesis = self._asr.transcribe(request)

@@ -30,13 +30,17 @@ class FakeTranslationBackend:
     translations: dict[str, str]
 
     def translate(self, request: TranslationRequest) -> TranslationResult:
-        source = ' '.join(
-            part for part in (request.committed, request.provisional) if part
-        )
-        translated = self.translations[source]
         return TranslationResult(
             request.session_id,
             request.sequence,
-            committed=translated if request.committed else '',
-            provisional=translated if not request.committed else '',
+            committed=(
+                self.translations[request.committed]
+                if request.committed
+                else ''
+            ),
+            provisional=(
+                self.translations[request.provisional]
+                if request.provisional
+                else ''
+            ),
         )
