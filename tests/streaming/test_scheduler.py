@@ -72,3 +72,16 @@ def test_reset_clears_active_and_pending_work_without_changing_count() -> None:
     assert scheduler.in_flight is False
     assert scheduler.coalesced_count == 1
     assert scheduler.submit(request(4)) is not None
+
+
+def test_pending_request_from_before_reset_cannot_be_promoted_later() -> None:
+    scheduler = LatestWindowScheduler()
+    scheduler.submit(request(1))
+    scheduler.submit(request(2))
+
+    scheduler.reset()
+    post_reset = scheduler.submit(request(3))
+
+    assert post_reset is not None and post_reset.sequence == 3
+    assert scheduler.complete('s1', 3) is None
+    assert scheduler.in_flight is False

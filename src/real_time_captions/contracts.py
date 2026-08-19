@@ -1,6 +1,8 @@
 from dataclasses import dataclass
 from enum import StrEnum
 
+import numpy as np
+
 
 class SourceState(StrEnum):
     STARTING = 'starting'
@@ -24,6 +26,7 @@ class ViewMode(StrEnum):
 @dataclass(frozen=True, slots=True)
 class Word:
     text: str
+    # Session-relative seconds from the start of the current capture session.
     start: float
     end: float
 
@@ -32,8 +35,14 @@ class Word:
 class InferenceRequest:
     session_id: str
     sequence: int
-    samples: object
+    samples: np.ndarray
+    # Session-relative end of the represented audio window, in seconds.
     audio_end: float
+
+    def __post_init__(self) -> None:
+        owned = np.array(self.samples, copy=True)
+        owned.setflags(write=False)
+        object.__setattr__(self, 'samples', owned)
 
 
 @dataclass(frozen=True, slots=True)
@@ -43,6 +52,7 @@ class AsrHypothesis:
     words: tuple[Word, ...]
     language: str
     language_confidence: float
+    # Same session-relative clock as every contained Word.
     audio_end: float
 
 
@@ -55,6 +65,7 @@ class StabilizedText:
 @dataclass(frozen=True, slots=True)
 class CaptionSnapshot:
     session_id: str
+    # Monotonic source-state revision, independent of ASR request sequence.
     sequence: int
     language: str | None
     source_committed: str

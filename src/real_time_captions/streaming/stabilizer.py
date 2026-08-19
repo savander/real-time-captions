@@ -1,10 +1,18 @@
+import math
 import unicodedata
 
 from real_time_captions.contracts import StabilizedText, Word
 
 
 def _key(word: Word) -> str:
-    return unicodedata.normalize("NFKC", word.text).casefold().strip(".,!?;:")
+    normalized = unicodedata.normalize('NFKC', word.text).casefold()
+    start = 0
+    end = len(normalized)
+    while start < end and unicodedata.category(normalized[start]).startswith('P'):
+        start += 1
+    while end > start and unicodedata.category(normalized[end - 1]).startswith('P'):
+        end -= 1
+    return normalized[start:end]
 
 
 def _matches(left: Word, right: Word) -> bool:
@@ -41,7 +49,13 @@ class HypothesisStabilizer:
         cutoff = audio_end - self.guard_seconds
         commit_count = 0
         for word, count in zip(current, counts, strict=False):
-            if count < self.required_agreements or word.end > cutoff:
+            after_cutoff = word.end > cutoff and not math.isclose(
+                word.end,
+                cutoff,
+                rel_tol=0.0,
+                abs_tol=1e-9,
+            )
+            if count < self.required_agreements or after_cutoff:
                 break
             commit_count += 1
 
@@ -71,7 +85,9 @@ class HypothesisStabilizer:
         committed_prefix = 0
         for start in range(len(self._committed)):
             length = 0
-            for committed, candidate in zip(self._committed[start:], words, strict=False):
+            for committed, candidate in zip(
+                self._committed[start:], words, strict=False
+            ):
                 if not _is_committed_duplicate(committed, candidate):
                     break
                 length += 1

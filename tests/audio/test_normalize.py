@@ -87,3 +87,16 @@ def test_normalize_frame_rejects_samples_that_do_not_fit_channel_count() -> None
 
     with pytest.raises(ValueError):
         normalize_frame(frame)
+
+
+def test_audio_frame_owns_a_read_only_sample_snapshot() -> None:
+    source = np.array([0.25, 0.5], dtype=np.float32)
+
+    frame = make_frame(source)
+    source[0] = 9.0
+
+    np.testing.assert_array_equal(
+        frame.samples, np.array([0.25, 0.5], dtype=np.float32)
+    )
+    with pytest.raises(ValueError, match='read-only'):
+        frame.samples[0] = 1.0

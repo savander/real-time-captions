@@ -2,162 +2,170 @@
 
 ## Milestone boundary
 
-This branch delivers a deterministic, portable Python caption-processing core.
-It accepts already-captured PCM sample windows, invokes injected backends, and
-publishes coherent caption snapshots. It deliberately contains no Windows
-device discovery, loopback or microphone capture, machine-learning runtime,
-GUI/overlay, child process, IPC, or release packaging integration.
+This branch delivers a deterministic, platform-neutral caption-processing
+core. It accepts already-captured PCM sample windows, invokes injected
+backends, and publishes immutable caption snapshots. It deliberately contains
+no Windows capture, machine-learning runtime, GUI, child process, IPC, or
+release integration.
 
 The portable package depends only on NumPy, SciPy, and platform-neutral Python
-standard-library facilities. Platform and model adapters belong behind the
-backend protocols, outside the core package boundary.
+standard-library facilities. Platform and model adapters belong behind
+protocols and outside the core package boundary.
 
-## Contracts
+## Clocks and value contracts
 
-### Value contracts
+Every timestamp uses one clock: session-relative seconds measured from the
+start of the current capture session.
 
-- `SourceState` describes a future source lifecycle: `starting`, `running`,
-  `reconnecting`, `failed`, and `stopped`.
-- `TargetLanguage` selects native captions, English, or Polish. `ViewMode`
-  selects target-only or bilingual presentation for a future UI.
-- `AudioFrame` carries a source `session_id`, PCM samples, source sample rate,
-  channel count, monotonically supplied source sequence, and capture time.
-- `Word` is immutable text with start and end timestamps. `InferenceRequest`
-  identifies one audio window by session and sequence, carries its samples, and
-  records its audio end time. `AsrHypothesis` returns that identity, timestamped
-  words, detected language and confidence, and audio end time.
-- `StabilizedText` divides words into committed and provisional tuples.
-  `CaptionSnapshot` is the immutable externally visible source and translation
-  state for one session and sequence.
-- `TranslationRequest` names the exact session, source sequence, source
-  language, target, committed source text, and provisional source text to
-  translate. `TranslationResult` returns the same session and sequence plus
-  separate committed and provisional translations.
+- AudioFrame.captured_at locates a captured frame on that clock.
+- InferenceRequest.audio_end, AsrHypothesis.audio_end, and every Word.start
+  and Word.end use the same coordinate system. A backend whose model returns
+  window-relative timestamps must convert them at its adapter boundary.
+- AudioFrame and InferenceRequest copy NumPy payloads at construction and
+  expose read-only arrays. Producers therefore cannot mutate an already
+  identified asynchronous message through a retained source array.
+- StabilizedText contains immutable committed and provisional word tuples.
+  CaptionSnapshot is one immutable externally visible source revision.
 
-### Extension contracts
+There are two distinct monotonic identities:
 
-- `AudioSource` emits timestamped PCM frames without exposing platform APIs:
-  `read()` returns one `AudioFrame` or `None` when no frame is available.
-- `AsrBackend` converts one latest-window `InferenceRequest` into an
-  `AsrHypothesis` with word timestamps. An implementation must preserve the
-  request's session and sequence identities in its result.
-- `TranslationBackend` translates the exact source revision in a
-  `TranslationRequest` to English or Polish, returning a `TranslationResult`
-  with matching session and sequence identities.
+| Identity | Owner | Advances when |
+| --- | --- | --- |
+| ASR request sequence | RealtimeCaptionCore | an audio window is submitted |
+| source revision sequence | core and CaptionStore | accepted visible source state changes |
 
-Adapters implement these protocols. The core owns neither capture hardware nor
-model loading, so replacing an adapter does not require a core change.
+An ignored or mismatched ASR result does not consume a source revision.
+Finalization consumes a source revision only if it changes source state.
 
-## Core components and state ownership
+TranslationRequest.sequence is the source revision, never the ASR request
+sequence. TranslationRequest.committed is only the still-untranslated
+committed source delta, while provisional is the replaceable current suffix.
+committed_segment_id is optional for provisional-only work and stable for a
+pending committed unit. TranslationResult must echo the exact session, source
+revision, and committed segment identity.
 
-`RealtimeCaptionCore` is the orchestration owner. It owns the rolling audio
-window, monotonically increasing request sequence, `LatestWindowScheduler`,
-`LanguageSmoother`, `HypothesisStabilizer`, and `CaptionStore`; adapters own
-their own runtime state.
+## Extension contracts
 
-- `AudioRingBuffer` stores only the bounded latest mono sample context. Its
-  capacity is `sample_rate * context_seconds`; appends normalize to `float32`
-  and overwrites old samples.
-- `normalize_frame` validates positive integer rates/channels, converts PCM to
-  mono `float32`, and resamples to the requested rate (16 kHz by default).
-- `LatestWindowScheduler` permits one active inference request and one pending
-  request. While busy, a submission replaces the pending request; replacing an
-  existing pending request increments `coalesced_count`.
-- `LanguageSmoother` confirms a language only after configured high-confidence
-  observations, supports a manual lock, and resets a candidate at an utterance
-  boundary.
-- `HypothesisStabilizer` commits only agreeing words older than its guard time;
-  it filters overlap with already committed words and can finalize a remaining
-  tail.
-- `CaptionStore` owns source and translation text plus the last accepted
-  sequence. It emits snapshots and creates a translation request only when a
-  non-native target and a source language exist.
-- `RuntimeMetrics` owns bounded latency samples and counters. Its immutable
-  `DiagnosticsSnapshot` exposes `first_caption_p50` and `first_caption_p95`
-  (nearest-rank time to first caption), `commit_p50` and `commit_p95`
-  (nearest-rank time to commitment), `coalesced_windows` (discarded pending
-  windows), and `worker_restarts` (host-recorded restart count). Empty latency
-  samples produce `None` percentile values. It is a portable measurement
-  utility; no worker exists in this milestone.
-- `AppSettings` is the immutable persisted preferences value. `target` selects
-  native, English, or Polish translation; `view_mode` selects target-only or
-  bilingual presentation for a future view; `profile` is one of `fast`,
-  `balanced`, `quality`, or `custom` and is stored for a future host to map to
-  runtime choices; `locked_language` is an optional persisted manual-language
-  choice that a host can apply with `LanguageSmoother.lock`. Settings alone do
-  not instantiate adapters or alter a running core.
-- `SettingsStore` owns the versioned local settings document. Settings save
-  through a same-directory temporary file and replacement.
-- `real-time-captions core-smoke` constructs deterministic in-process ASR and
-  translation adapters and prints one JSON `CaptionSnapshot`. It is a core
-  verification command, not a live application mode.
+- AudioSource.read() returns one AudioFrame or None without exposing a
+  platform API.
+- AsrBackend.transcribe() converts a latest-window InferenceRequest into an
+  AsrHypothesis. It must echo the request session and ASR sequence and return
+  session-relative timestamps.
+- TranslationBackend.translate() translates an exact source revision to
+  English or Polish and echoes its committed segment identity.
 
-## Data flow and scheduling
+Adapters own capture or model runtime state. The core owns no hardware,
+download, model-loading, or process lifecycle.
 
-1. A future `AudioSource` supplies an `AudioFrame`; its caller uses
-   `normalize_frame` and calls `RealtimeCaptionCore.submit_audio(samples,
-   audio_end)`.
-2. The core appends samples to its bounded ring buffer, assigns the next
-   sequence, and submits the full current rolling window to the scheduler.
-3. If inference is idle, the core calls `AsrBackend.transcribe`. If it is busy,
-   only the newest pending window survives (latest-wins).
-4. A matching ASR hypothesis is smoothed for language, stabilized into
-   committed/provisional words, and applied to the caption store.
-5. For English or Polish targets, the store creates one exact-revision request
-   for `TranslationBackend`; a matching result updates both translation
-   channels. The returned `CaptionSnapshot` is immutable.
+## State ownership
 
-## Session, sequence, and caption invariants
+RealtimeCaptionCore owns:
 
-- A core instance represents one supplied `session_id`; its request sequence
-  increases for every submitted audio window.
-- At most one inference request is active and one latest request is pending.
-  Completing a request promotes only that latest pending request.
-- The scheduler rejects completion identities that do not match its active
-  session and sequence. An ASR result with a mismatched identity cannot mutate
-  caption state. A translation result with a mismatched identity is ignored.
-- The caption store ignores source updates older than its accepted sequence.
-  A newer source revision clears previous translation text before its new
-  translation arrives.
-- Provisional text may be replaced by later hypotheses. Committed text is
-  append-only within a session: stabilization never re-commits overlapping old
-  words, and `finalize()` appends the remaining provisional tail then clears it.
-- A native target has no translation request or translation text. Snapshots
-  always contain source and translation channels for the same accepted source
-  revision.
+- the bounded AudioRingBuffer;
+- independent ASR request and source revision counters;
+- LatestWindowScheduler;
+- the current utterance identity and activity flag;
+- LanguageSmoother;
+- HypothesisStabilizer; and
+- CaptionStore.
 
-## Failure semantics
+The scheduler permits one active ASR request and one latest pending request.
+Replacing a pending request increments coalesced_count. Reset removes both
+active and pending work; no pre-reset request can later be promoted.
 
-- Invalid ring-buffer capacity, invalid audio-frame rates/channels, and invalid
-  metric values raise `ValueError`.
-- Scheduler completion for no active request or the wrong identity raises
-  `ValueError`.
-- An ASR failure occurs before source mutation. The core resets active and
-  pending scheduler work, preserves the last successfully stored snapshot, and
-  re-raises the original exception; a later submission can proceed.
-- Translation failure occurs after source state has been applied. The core still
-  resets active and pending scheduler work and re-raises the original exception.
-  The new source snapshot remains; translation channels are empty for a new
-  source revision or retain an earlier valid value when the source revision is
-  unchanged. A later submission can proceed.
-- A missing settings file returns defaults without warnings. Corrupt,
-  unreadable, unsupported, or invalid persisted settings return defaults or
-  field defaults with warnings. `save()` validates the profile and propagates
-  write or replacement errors; temporary cleanup errors are also surfaced when
-  there was no earlier save error.
+The language smoother retains the last confirmed language only as a weak
+prior. Each utterance must satisfy the configured confirmations before the
+core publishes a language or asks for translation. Native provisional source
+text remains immediate while confirmation is pending.
+
+The stabilizer compares normalized text and overlapping session timestamps.
+It trims leading and trailing Unicode punctuation for comparison, commits
+agreements at or before the inclusive guard cutoff, and never edits already
+committed words.
+
+## Caption and translation state
+
+CaptionStore is the single owner of visible caption text.
+
+- apply_source accepts only a strictly newer source revision that changes
+  visible source state.
+- A candidate committed word sequence must start with the complete accepted
+  committed prefix. Retraction or rewording is rejected.
+- Accepted committed source and committed translation are append-only.
+- A newer source revision preserves accepted committed translation and clears
+  provisional translation derived from the older revision.
+- Newly committed source is accumulated as one pending translation unit.
+  Additional commits may join it, but its segment ID remains stable until an
+  exact translation succeeds.
+- After success, only the returned committed delta is appended to committed
+  translation. The next committed unit receives a new segment ID.
+- Translation results are accepted only for the exact session, current source
+  revision, and current optional segment identity.
+
+These rules prevent a newly committed source prefix from appearing beside an
+old provisional translation and prevent stale work from replacing accepted
+state.
+
+## Realtime flow
+
+1. The host supplies normalized samples plus a session-relative audio_end.
+2. The core appends them to its bounded ring buffer and assigns an ASR request
+   sequence.
+3. A matching hypothesis updates the current utterance, language evidence, and
+   stabilizer. A mismatched session or ASR sequence is ignored before any of
+   those states mutate.
+4. The core proposes the next source revision. The store accepts it only when
+   visible source state changed and the committed prefix is valid.
+5. Native source is returned immediately. Translation is requested only after
+   the current utterance language is confirmed.
+6. A matching translation updates the replaceable provisional channel and/or
+   appends the exact committed delta.
+
+## Finalization and failure semantics
+
+Pristine finalization is a no-op. Finalizing an active utterance commits its
+remaining stabilizer tail, creates a source revision only for a real source
+change, and advances the utterance identity even when all words had already
+committed. Repeating a successful finalization performs no duplicate backend
+work.
+
+Translation failure occurs after source state has been applied. The new native
+source remains visible, stale provisional translation is already cleared, and
+the pending committed segment remains retryable with its original ID. A later
+processing step or repeated finalize after that failure retries the exact
+pending unit. Once it succeeds, further finalize calls are no-ops.
+
+An ASR failure happens before source mutation. ASR or translation exceptions
+reset scheduler work, preserve the last accepted caption state, and are
+re-raised. Stale session, ASR sequence, source revision, or segment results
+cannot mutate state.
+
+## Settings, diagnostics, and host paths
+
+RuntimeMetrics owns bounded first-caption and commit latency samples plus
+coalesced-window and worker-restart counters. DiagnosticsSnapshot exposes
+first_caption_p50, first_caption_p95, commit_p50, commit_p95,
+coalesced_windows, and worker_restarts.
+
+AppSettings contains target, view_mode, profile, and locked_language.
+SettingsStore accepts an injected path and persists schema-versioned JSON
+through same-directory temporary replacement. A
+missing settings file returns defaults without warnings; invalid values recover
+individually with warnings.
+
+The approved product design assigns per-user path discovery to the future
+host/UI through platformdirs. This portable milestone has no host and
+therefore injects a path and intentionally does not depend on platformdirs.
+The host/UI plan must add that dependency and resolve the per-user settings
+path before constructing SettingsStore.
 
 ## Roadmap
 
-1. **Current: portable core** - deterministic audio-window processing,
-   extension contracts, stabilization, caption state, settings, diagnostics,
-   and a core smoke command.
-2. **Windows audio plan** - implement device selection and loopback/microphone
-   adapters behind `AudioSource`.
-3. **Model benchmark plan** - implement and evaluate real ASR and translation
-   adapters behind `AsrBackend` and `TranslationBackend`.
-4. **GUI and overlay plan** - add display controls and an overlay that consumes
-   snapshots without taking ownership of core state.
-5. **Child-process and release integration plan** - isolate heavyweight runtime
-   work, define IPC/lifecycle behavior, and package the Windows application.
-
-The four follow-up plans are intentionally not implemented by this milestone.
+1. **Current: portable core** - deterministic state, protocols, settings,
+   diagnostics, and core smoke command.
+2. **Windows audio** - device, loopback, process, and microphone adapters.
+3. **Model benchmarks** - real ASR and translation adapters and RTX 3080
+   profile evidence.
+4. **GUI and overlay** - host-owned paths, controls, tray, and caption view.
+5. **Child-process and release integration** - IPC, lifecycle, soak tests, and
+   packaging.

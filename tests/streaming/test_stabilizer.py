@@ -102,6 +102,41 @@ def test_required_agreement_count_must_be_reached_before_commit() -> None:
     assert [word.text for word in result.committed] == ["potvrdit"]
 
 
+def test_guard_time_includes_a_word_exactly_at_the_cutoff() -> None:
+    stabilizer = HypothesisStabilizer(required_agreements=2, guard_seconds=0.4)
+    hypothesis = words(('hranice', 0.2, 0.8))
+
+    stabilizer.update(hypothesis, audio_end=1.2)
+    result = stabilizer.update(hypothesis, audio_end=1.2)
+
+    assert [word.text for word in result.committed] == ['hranice']
+    assert result.provisional == ()
+
+
+def test_unicode_curly_quotes_and_ellipsis_are_trimmed_for_agreement() -> None:
+    stabilizer = HypothesisStabilizer(required_agreements=2, guard_seconds=0.0)
+
+    stabilizer.update(
+        words(
+            ('\u201eP\u0159\u00edli\u0161\u2026\u201c', 0.0, 0.5),
+            ('\u201e\u017c\u00f3\u0142\u0107\u2026\u201d', 0.5, 1.0),
+        ),
+        audio_end=2.0,
+    )
+    result = stabilizer.update(
+        words(
+            ('p\u0159\u00edli\u0161', 0.0, 0.5),
+            ('\u017b\u00d3\u0141\u0106', 0.5, 1.0),
+        ),
+        audio_end=2.0,
+    )
+
+    assert [word.text for word in result.committed] == [
+        'p\u0159\u00edli\u0161',
+        '\u017b\u00d3\u0141\u0106',
+    ]
+
+
 def test_committed_word_with_tolerable_drift_is_not_recommitted() -> None:
     stabilizer = HypothesisStabilizer(required_agreements=2, guard_seconds=0.0)
     first = words(("už", 0.0, 0.4), ("teď", 0.5, 0.8))

@@ -35,30 +35,33 @@ def test_core_bypasses_translation_for_native_captions() -> None:
     assert snapshot.translation_provisional == ''
 
 
-def test_finalize_commits_the_last_provisional_caption_and_translation() -> None:
-    asr = FakeAsrBackend(
-        hypotheses=[
-            ('cs', (Word('Dobrý', 0.0, 0.4), Word('den', 0.4, 0.8)))
-        ]
+def test_finalize_commits_the_last_confirmed_provisional_caption() -> None:
+    utterance = (
+        Word('Dobr\u00fd', 0.0, 0.4),
+        Word('den', 0.4, 0.8),
     )
+    asr = FakeAsrBackend(hypotheses=[('cs', utterance), ('cs', utterance)])
     core = RealtimeCaptionCore(
         session_id='finalize',
         asr=asr,
-        translator=FakeTranslationBackend({'Dobrý den': 'Dzień dobry'}),
+        translator=FakeTranslationBackend(
+            {'Dobr\u00fd den': 'Dzie\u0144 dobry'}
+        ),
         target=TargetLanguage.POLISH,
         sample_rate=16_000,
         context_seconds=5,
     )
+    core.submit_audio(np.ones(1_000, dtype=np.float32), audio_end=0.8)
     provisional = core.submit_audio(
         np.ones(1_000, dtype=np.float32), audio_end=0.8
     )
 
     finalized = core.finalize()
 
-    assert provisional.source_provisional == 'Dobrý den'
-    assert finalized.source_committed == 'Dobrý den'
+    assert provisional.source_provisional == 'Dobr\u00fd den'
+    assert finalized.source_committed == 'Dobr\u00fd den'
     assert finalized.source_provisional == ''
-    assert finalized.translation_committed == 'Dzień dobry'
+    assert finalized.translation_committed == 'Dzie\u0144 dobry'
     assert finalized.translation_provisional == ''
 
 
@@ -67,7 +70,7 @@ def test_returned_snapshots_remain_immutable_and_coherent() -> None:
     core = RealtimeCaptionCore(
         session_id='snapshots',
         asr=FakeAsrBackend(hypotheses=[('cs', words), ('cs', words)]),
-        translator=FakeTranslationBackend({'Ahoj': 'Cześć'}),
+        translator=FakeTranslationBackend({'Ahoj': 'Cze\u015b\u0107'}),
         target=TargetLanguage.POLISH,
         sample_rate=10,
         context_seconds=2,
@@ -78,10 +81,10 @@ def test_returned_snapshots_remain_immutable_and_coherent() -> None:
 
     assert first.sequence == 1
     assert first.source_provisional == 'Ahoj'
-    assert first.translation_provisional == 'Cześć'
+    assert first.translation_provisional == ''
     assert second.sequence == 2
     assert second.source_committed == 'Ahoj'
-    assert second.translation_committed == 'Cześć'
+    assert second.translation_committed == 'Cze\u015b\u0107'
     assert core.snapshot() == second
     with pytest.raises(FrozenInstanceError):
         first.sequence = 99  # type: ignore[misc]
@@ -136,15 +139,13 @@ def test_mismatched_asr_result_cannot_mutate_caption_state(
     assert rejected.language is None
     assert rejected.source_committed == ''
     assert rejected.source_provisional == ''
-    assert accepted.sequence == 2
+    assert accepted.sequence == 1
     assert accepted.source_committed == ''
     assert accepted.source_provisional == 'Ahoj'
 
 
 def test_asr_receives_only_the_bounded_rolling_audio_context() -> None:
-    asr = FakeAsrBackend(
-        hypotheses=[('cs', ()), ('cs', ())]
-    )
+    asr = FakeAsrBackend(hypotheses=[('cs', ()), ('cs', ())])
     core = RealtimeCaptionCore(
         session_id='bounded',
         asr=asr,

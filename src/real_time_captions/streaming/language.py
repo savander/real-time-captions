@@ -6,6 +6,7 @@ class LanguageSmoother:
         self._candidate: str | None = None
         self._count = 0
         self._utterance: str | None = None
+        self._confirmed_for_utterance = False
         self._locked: str | None = None
 
     def observe(self, language: str, confidence: float, utterance_id: str) -> str | None:
@@ -15,15 +16,17 @@ class LanguageSmoother:
             self._utterance = utterance_id
             self._candidate = None
             self._count = 0
+            self._confirmed_for_utterance = False
         if confidence < self.minimum_confidence:
-            return self.current
+            return self.current if self._confirmed_for_utterance else None
         if language != self._candidate:
             self._candidate, self._count = language, 1
         else:
             self._count += 1
         if self._count >= self.confirmations:
             self.current = language
-        return self.current
+            self._confirmed_for_utterance = True
+        return self.current if self._confirmed_for_utterance else None
 
     def lock(self, language: str) -> None:
         self._locked = language

@@ -43,4 +43,5 @@ class FakeTranslationBackend:
                 if request.provisional
                 else ''
             ),
+            committed_segment_id=request.committed_segment_id,
         )

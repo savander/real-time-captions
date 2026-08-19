@@ -48,7 +48,7 @@ class ReentrantFailingTranslationBackend:
         if self.calls == 1:
             assert self.core is not None
             self.core.submit_audio(
-                np.ones(2, dtype=np.float32), audio_end=1.0
+                np.ones(2, dtype=np.float32), audio_end=2.5
             )
             raise RuntimeError('translation failed')
         return TranslationResult(
@@ -56,6 +56,7 @@ class ReentrantFailingTranslationBackend:
             request.sequence,
             committed='Cze\u015b\u0107' if request.committed else '',
             provisional='Cze\u015b\u0107' if request.provisional else '',
+            committed_segment_id=request.committed_segment_id,
         )
 
 
@@ -79,14 +80,16 @@ def test_asr_error_discards_pending_work_and_later_submission_runs() -> None:
     )
 
     assert asr.sequences == [1, 3]
-    assert recovered.sequence == 3
+    assert recovered.sequence == 1
     assert recovered.source_committed == ''
     assert recovered.source_provisional == 'Ahoj'
 
 
-def test_translation_error_preserves_source_and_later_submission_runs() -> None:
+def test_translation_error_preserves_pending_commit_for_later_processing() -> None:
     words = (Word('Ahoj', 0.0, 0.2),)
-    asr = FakeAsrBackend(hypotheses=[('cs', words), ('cs', words)])
+    asr = FakeAsrBackend(
+        hypotheses=[('cs', words), ('cs', words), ('cs', words)]
+    )
     translator = ReentrantFailingTranslationBackend()
     core = RealtimeCaptionCore(
         session_id='translation-recovery',
@@ -98,18 +101,23 @@ def test_translation_error_preserves_source_and_later_submission_runs() -> None:
     )
     translator.core = core
 
+    first = core.submit_audio(
+        np.ones(2, dtype=np.float32), audio_end=0.5
+    )
     with pytest.raises(RuntimeError, match='translation failed'):
-        core.submit_audio(np.ones(2, dtype=np.float32), audio_end=0.5)
+        core.submit_audio(np.ones(2, dtype=np.float32), audio_end=2.0)
 
     after_error = core.snapshot()
     recovered = core.submit_audio(
-        np.ones(2, dtype=np.float32), audio_end=2.0
+        np.ones(2, dtype=np.float32), audio_end=3.0
     )
 
-    assert after_error.sequence == 1
-    assert after_error.source_provisional == 'Ahoj'
+    assert first.sequence == 1
+    assert first.source_provisional == 'Ahoj'
+    assert after_error.sequence == 2
+    assert after_error.source_committed == 'Ahoj'
     assert after_error.translation_provisional == ''
-    assert [request.sequence for request in asr.requests] == [1, 3]
-    assert recovered.sequence == 3
+    assert [request.sequence for request in asr.requests] == [1, 2, 4]
+    assert recovered.sequence == 2
     assert recovered.source_committed == 'Ahoj'
     assert recovered.translation_committed == 'Cze\u015b\u0107'

@@ -84,9 +84,28 @@ def test_runtime_metrics_rejects_non_positive_sample_capacity(capacity: int) -> 
         RuntimeMetrics(max_samples=capacity)
 
 
+@pytest.mark.parametrize('capacity', (False, True))
+def test_runtime_metrics_rejects_boolean_sample_capacity(capacity: bool) -> None:
+    with pytest.raises(ValueError, match='max_samples'):
+        RuntimeMetrics(max_samples=capacity)
+
+
 @pytest.mark.parametrize('latency', (-0.01, float('inf'), float('nan')))
 def test_runtime_metrics_rejects_invalid_latency_values(latency: float) -> None:
     metrics = RuntimeMetrics(max_samples=1)
 
     with pytest.raises(ValueError, match='latency'):
         metrics.record_first_caption_latency(latency)
+
+
+@pytest.mark.parametrize(
+    'method_name', ('record_first_caption_latency', 'record_commit_latency')
+)
+@pytest.mark.parametrize('latency', (False, True))
+def test_runtime_metrics_rejects_boolean_latency_values(
+    method_name: str, latency: bool
+) -> None:
+    metrics = RuntimeMetrics(max_samples=1)
+
+    with pytest.raises(ValueError, match='latency'):
+        getattr(metrics, method_name)(latency)

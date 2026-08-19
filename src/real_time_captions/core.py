@@ -7,6 +7,7 @@ from real_time_captions.captions.translation import TranslationBackend
 from real_time_captions.contracts import (
     CaptionSnapshot,
     InferenceRequest,
+    StabilizedText,
     TargetLanguage,
     Word,
 )
@@ -28,7 +29,10 @@ class RealtimeCaptionCore:
         self._session_id = session_id
         self._asr = asr
         self._translator = translator
-        self._sequence = 0
+        self._asr_sequence = 0
+        self._source_revision = 0
+        self._utterance_id = 1
+        self._utterance_active = False
         self._last_words: tuple[Word, ...] = ()
         self._audio = AudioRingBuffer(sample_rate * context_seconds)
         self._scheduler = LatestWindowScheduler()
@@ -40,10 +44,10 @@ class RealtimeCaptionCore:
         self, samples: np.ndarray, audio_end: float
     ) -> CaptionSnapshot:
         self._audio.append(samples)
-        self._sequence += 1
+        self._asr_sequence += 1
         request = InferenceRequest(
             self._session_id,
-            self._sequence,
+            self._asr_sequence,
             self._audio.latest(self._audio.size),
             audio_end,
         )
@@ -73,40 +77,55 @@ class RealtimeCaptionCore:
             request.sequence,
         ):
             return self._store.snapshot()
+
         self._last_words = hypothesis.words
+        self._utterance_active = self._utterance_active or bool(hypothesis.words)
         language = (
             self._language.observe(
                 hypothesis.language,
                 hypothesis.language_confidence,
-                'active',
+                str(self._utterance_id),
             )
-            or hypothesis.language
+            if hypothesis.words
+            else None
         )
-        stable = self._stabilizer.update(hypothesis.words, hypothesis.audio_end)
-        self._store.apply_source(
-            hypothesis.sequence,
-            language,
-            stable.committed,
-            stable.provisional,
+        stable = self._stabilizer.update(
+            hypothesis.words, hypothesis.audio_end
         )
-        translation = self._store.translation_request()
-        if translation is not None:
-            self._store.apply_translation(self._translator.translate(translation))
+        self._apply_source(language, stable)
+        self._translate_current()
         return self._store.snapshot()
 
     def finalize(self) -> CaptionSnapshot:
+        if not self._utterance_active:
+            self._translate_current()
+            return self._store.snapshot()
+
         stable = self._stabilizer.finalize(self._last_words)
-        language = self._language.current or self._store.language or 'und'
-        self._store.apply_source(
-            self._sequence,
-            language,
-            stable.committed,
-            stable.provisional,
-        )
-        translation = self._store.translation_request()
-        if translation is not None:
-            self._store.apply_translation(self._translator.translate(translation))
+        self._apply_source(self._store.language, stable)
+        self._last_words = ()
+        self._utterance_active = False
+        self._utterance_id += 1
+        self._translate_current()
         return self._store.snapshot()
 
     def snapshot(self) -> CaptionSnapshot:
         return self._store.snapshot()
+
+    def _apply_source(
+        self, language: str | None, stable: StabilizedText
+    ) -> None:
+        revision = self._source_revision + 1
+        if self._store.apply_source(
+            revision,
+            language,
+            stable.committed,
+            stable.provisional,
+        ):
+            self._source_revision = revision
+
+    def _translate_current(self) -> None:
+        request = self._store.translation_request()
+        if request is not None:
+            result = self._translator.translate(request)
+            self._store.apply_translation(result)
