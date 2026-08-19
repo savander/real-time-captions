@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from types import ModuleType
+from collections.abc import Callable
 from typing import Mapping
 
 from real_time_captions.audio.capture import AudioSourceOpenError
@@ -42,6 +43,22 @@ class PyAudioApi:
 
     def close(self) -> None:
         self.manager.terminate()
+
+    @property
+    def continue_token(self) -> int:
+        return int(self.module.paContinue)
+
+    def open_input(self, device: WasapiDevice, frames_per_buffer: int, callback: Callable[..., tuple[None, int]]) -> object:
+        return self.manager.open(
+            format=self.module.paFloat32,
+            channels=device.input_channels,
+            rate=device.sample_rate,
+            input=True,
+            input_device_index=device.index,
+            frames_per_buffer=frames_per_buffer,
+            stream_callback=callback,
+            start=False,
+        )
 
     def default_loopback(self) -> WasapiDevice | None:
         try:
