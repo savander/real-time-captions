@@ -59,6 +59,7 @@ class SettingsStore:
         self.path.parent.mkdir(parents=True, exist_ok=True)
         payload = {'schema_version': _SCHEMA_VERSION, **asdict(settings)}
         temporary: Path | None = None
+        primary_error = False
 
         try:
             with tempfile.NamedTemporaryFile(
@@ -74,9 +75,16 @@ class SettingsStore:
                 stream.flush()
                 os.fsync(stream.fileno())
             temporary.replace(self.path)
+        except BaseException:
+            primary_error = True
+            raise
         finally:
             if temporary is not None:
-                temporary.unlink(missing_ok=True)
+                try:
+                    temporary.unlink(missing_ok=True)
+                except OSError:
+                    if not primary_error:
+                        raise
 
     @staticmethod
     def _read_target(
