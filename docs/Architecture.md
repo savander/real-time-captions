@@ -72,11 +72,22 @@ their own runtime state.
 - `CaptionStore` owns source and translation text plus the last accepted
   sequence. It emits snapshots and creates a translation request only when a
   non-native target and a source language exist.
-- `RuntimeMetrics` owns bounded latency samples and counters, returning p50/p95
-  diagnostics, coalesced-window count, and worker-restart count. It is a
-  portable measurement utility; no worker exists in this milestone.
-- `AppSettings` and `SettingsStore` own the versioned local settings document.
-  Settings save through a same-directory temporary file and replacement.
+- `RuntimeMetrics` owns bounded latency samples and counters. Its immutable
+  `DiagnosticsSnapshot` exposes `first_caption_p50` and `first_caption_p95`
+  (nearest-rank time to first caption), `commit_p50` and `commit_p95`
+  (nearest-rank time to commitment), `coalesced_windows` (discarded pending
+  windows), and `worker_restarts` (host-recorded restart count). Empty latency
+  samples produce `None` percentile values. It is a portable measurement
+  utility; no worker exists in this milestone.
+- `AppSettings` is the immutable persisted preferences value. `target` selects
+  native, English, or Polish translation; `view_mode` selects target-only or
+  bilingual presentation for a future view; `profile` is one of `fast`,
+  `balanced`, `quality`, or `custom` and is stored for a future host to map to
+  runtime choices; `locked_language` is an optional persisted manual-language
+  choice that a host can apply with `LanguageSmoother.lock`. Settings alone do
+  not instantiate adapters or alter a running core.
+- `SettingsStore` owns the versioned local settings document. Settings save
+  through a same-directory temporary file and replacement.
 - `real-time-captions core-smoke` constructs deterministic in-process ASR and
   translation adapters and prints one JSON `CaptionSnapshot`. It is a core
   verification command, not a live application mode.
@@ -121,26 +132,32 @@ their own runtime state.
   metric values raise `ValueError`.
 - Scheduler completion for no active request or the wrong identity raises
   `ValueError`.
-- If ASR or translation raises during `submit_audio`, the core resets active and
+- An ASR failure occurs before source mutation. The core resets active and
   pending scheduler work, preserves the last successfully stored snapshot, and
-  re-raises the original exception. A later submission can proceed.
-- `SettingsStore.load()` returns default settings plus warnings for missing,
-  unreadable, malformed, unsupported, or invalid settings values. `save()`
-  validates the profile and propagates write or replacement errors; temporary
-  cleanup errors are also surfaced when there was no earlier save error.
+  re-raises the original exception; a later submission can proceed.
+- Translation failure occurs after source state has been applied. The core still
+  resets active and pending scheduler work and re-raises the original exception.
+  The new source snapshot remains; translation channels are empty for a new
+  source revision or retain an earlier valid value when the source revision is
+  unchanged. A later submission can proceed.
+- A missing settings file returns defaults without warnings. Corrupt,
+  unreadable, unsupported, or invalid persisted settings return defaults or
+  field defaults with warnings. `save()` validates the profile and propagates
+  write or replacement errors; temporary cleanup errors are also surfaced when
+  there was no earlier save error.
 
 ## Roadmap
 
-1. **Current: portable core** — deterministic audio-window processing,
+1. **Current: portable core** - deterministic audio-window processing,
    extension contracts, stabilization, caption state, settings, diagnostics,
    and a core smoke command.
-2. **Windows audio plan** — implement device selection and loopback/microphone
+2. **Windows audio plan** - implement device selection and loopback/microphone
    adapters behind `AudioSource`.
-3. **Model benchmark plan** — implement and evaluate real ASR and translation
+3. **Model benchmark plan** - implement and evaluate real ASR and translation
    adapters behind `AsrBackend` and `TranslationBackend`.
-4. **GUI and overlay plan** — add display controls and an overlay that consumes
+4. **GUI and overlay plan** - add display controls and an overlay that consumes
    snapshots without taking ownership of core state.
-5. **Child-process and release integration plan** — isolate heavyweight runtime
+5. **Child-process and release integration plan** - isolate heavyweight runtime
    work, define IPC/lifecycle behavior, and package the Windows application.
 
 The four follow-up plans are intentionally not implemented by this milestone.
