@@ -7,6 +7,14 @@ def package_files() -> list[Path]:
     return list(Path("src/real_time_captions").rglob("*.py"))
 
 
+def portable_package_files() -> list[Path]:
+    return [
+        path
+        for path in package_files()
+        if 'platforms/windows/audio' not in path.as_posix()
+    ]
+
+
 def imported_roots(paths: list[Path]) -> set[str]:
     imported: set[str] = set()
     for path in paths:
@@ -45,10 +53,18 @@ def test_boundary_scan_includes_current_backend_protocol_modules() -> None:
 
 
 def test_portable_core_does_not_import_platform_or_heavy_runtime_modules() -> None:
-    forbidden = {"PyQt6", "torch", "transformers", "faster_whisper", "pyaudiowpatch"}
+    forbidden = {
+        "PyQt6",
+        "torch",
+        "transformers",
+        "faster_whisper",
+        "pyaudiowpatch",
+        "proctap",
+        "psutil",
+    }
 
     imported: set[str] = set()
-    for path in package_files():
+    for path in portable_package_files():
         tree = ast.parse(path.read_text(encoding="utf-8"))
         for node in ast.walk(tree):
             if isinstance(node, ast.Import):
@@ -56,7 +72,7 @@ def test_portable_core_does_not_import_platform_or_heavy_runtime_modules() -> No
             elif isinstance(node, ast.ImportFrom) and node.module:
                 imported.add(node.module.split(".")[0])
 
-    imported.update(imported_roots(package_files()))
+    imported.update(imported_roots(portable_package_files()))
     assert imported.isdisjoint(forbidden)
     architecture = Path("docs/Architecture.md")
     assert architecture.exists()
@@ -65,6 +81,11 @@ def test_portable_core_does_not_import_platform_or_heavy_runtime_modules() -> No
         contract in documentation
         for contract in ("AudioSource", "AsrBackend", "TranslationBackend")
     )
+
+
+def test_windows_audio_dependencies_stay_in_adapter_tree() -> None:
+    forbidden = {'pyaudiowpatch', 'proctap', 'psutil'}
+    assert imported_roots(portable_package_files()).isdisjoint(forbidden)
 
 
 def test_boundary_scanner_detects_constant_string_dynamic_imports(
