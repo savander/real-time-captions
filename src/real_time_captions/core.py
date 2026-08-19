@@ -103,6 +103,7 @@ class RealtimeCaptionCore:
 
         stable = self._stabilizer.finalize(self._last_words)
         self._apply_source(self._store.language, stable)
+        self._store.finish_utterance()
         self._last_words = ()
         self._utterance_active = False
         self._utterance_id += 1

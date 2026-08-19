@@ -155,6 +155,37 @@ def test_finalize_advances_utterance_and_new_language_requires_fresh_confirmatio
     assert translator.requests[-1].source_language == 'pl'
 
 
+def test_unconfirmed_finalized_segment_cannot_inherit_next_utterance_language() -> None:
+    czech = (Word('Ahoj', 0.0, 0.2),)
+    polish = (Word('Cześć', 1.0, 1.2),)
+    translator = RecordingTranslationBackend(
+        {'Ahoj': 'Cześć', 'Cześć': 'Hello'}
+    )
+    core = make_core(
+        [
+            HypothesisSpec('cs', 0.95, czech),
+            HypothesisSpec('pl', 0.95, polish),
+            HypothesisSpec('pl', 0.96, polish),
+        ],
+        translator,
+    )
+
+    core.submit_audio(np.ones(2, dtype=np.float32), audio_end=0.5)
+    finalized = core.finalize()
+    core.submit_audio(np.ones(2, dtype=np.float32), audio_end=1.3)
+    confirmed_polish = core.submit_audio(
+        np.ones(2, dtype=np.float32), audio_end=1.3
+    )
+
+    assert finalized.source_committed == 'Ahoj'
+    assert finalized.language is None
+    assert confirmed_polish.source_committed == 'Ahoj'
+    assert len(translator.requests) == 1
+    assert translator.requests[0].source_language == 'pl'
+    assert translator.requests[0].committed == ''
+    assert translator.requests[0].provisional == 'Cześć'
+
+
 def test_finalize_of_already_committed_source_advances_without_a_revision() -> None:
     first_words = (Word('Ahoj', 0.0, 0.2),)
     next_words = (Word('nov\u00e9', 1.0, 1.2),)

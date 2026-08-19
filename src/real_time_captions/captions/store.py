@@ -107,6 +107,11 @@ class CaptionStore:
             committed_segment_id=segment_id,
         )
 
+    def finish_utterance(self) -> None:
+        if self._pending_source_language is None:
+            self._pending_committed_words = ()
+            self._pending_segment_id = None
+
     def apply_translation(self, result: TranslationResult) -> bool:
         if self.target is TargetLanguage.NATIVE or self.sequence < 0:
             return False
