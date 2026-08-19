@@ -12,6 +12,11 @@ def _matches(left: Word, right: Word) -> bool:
     return overlaps and _key(left) == _key(right)
 
 
+def _is_committed_duplicate(left: Word, right: Word) -> bool:
+    overlaps = min(left.end, right.end) > max(left.start, right.start)
+    return overlaps and _key(left) == _key(right)
+
+
 class HypothesisStabilizer:
     def __init__(self, required_agreements: int, guard_seconds: float) -> None:
         self.required_agreements = required_agreements
@@ -64,10 +69,13 @@ class HypothesisStabilizer:
 
     def _uncommitted(self, words: tuple[Word, ...]) -> tuple[Word, ...]:
         committed_prefix = 0
-        for committed, candidate in zip(self._committed, words, strict=False):
-            if not _matches(committed, candidate):
-                break
-            committed_prefix += 1
+        for start in range(len(self._committed)):
+            length = 0
+            for committed, candidate in zip(self._committed[start:], words, strict=False):
+                if not _is_committed_duplicate(committed, candidate):
+                    break
+                length += 1
+            committed_prefix = max(committed_prefix, length)
         return tuple(
             word
             for word in words[committed_prefix:]

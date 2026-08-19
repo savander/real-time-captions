@@ -118,6 +118,20 @@ def test_committed_word_with_tolerable_drift_is_not_recommitted() -> None:
     assert [word.text for word in repeated.provisional] == ["pokračuj"]
 
 
+def test_shortened_hypothesis_does_not_recommit_later_committed_word() -> None:
+    stabilizer = HypothesisStabilizer(required_agreements=2, guard_seconds=0.0)
+    complete = words(('a', 0.0, 0.2), ('b', 0.3, 0.5))
+    shortened = words(('b', 0.3, 0.55))
+
+    stabilizer.update(complete, audio_end=1.0)
+    stabilizer.update(complete, audio_end=1.0)
+    stabilizer.update(shortened, audio_end=1.0)
+    result = stabilizer.update(shortened, audio_end=1.0)
+
+    assert [word.text for word in result.committed] == ['a', 'b']
+    assert result.provisional == ()
+
+
 def test_finalize_appends_remaining_tail_without_recommitting_drifted_words() -> None:
     stabilizer = HypothesisStabilizer(required_agreements=2, guard_seconds=0.0)
     first = words(("hotovo", 0.0, 0.4))
