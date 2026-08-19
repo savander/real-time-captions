@@ -10,3 +10,7 @@ wheels/
 .venv
 *.wav
 window_config.json
+
+# Agent workspaces
+.worktrees/
+.superpowers/
