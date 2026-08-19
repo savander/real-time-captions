@@ -37,6 +37,38 @@ def test_repeated_words_are_committed_in_their_original_order() -> None:
     assert [word.text for word in result.committed] == ["ano", "ano", "ne"]
 
 
+def test_adjacent_repeated_tail_survives_update_and_finalization() -> None:
+    stabilizer = HypothesisStabilizer(required_agreements=2, guard_seconds=0.1)
+    hypothesis = words(('ano', 0.0, 0.2), ('ano', 0.2, 0.4))
+
+    stabilizer.update(hypothesis, audio_end=0.31)
+    partial = stabilizer.update(hypothesis, audio_end=0.31)
+    retained = stabilizer.update(hypothesis, audio_end=0.31)
+    final = stabilizer.finalize(hypothesis)
+
+    assert [word.text for word in partial.committed] == ['ano']
+    assert [word.text for word in partial.provisional] == ['ano']
+    assert [word.text for word in retained.committed] == ['ano']
+    assert [word.text for word in retained.provisional] == ['ano']
+    assert [word.text for word in final.committed] == ['ano', 'ano']
+    assert final.provisional == ()
+
+
+def test_repeated_tail_finalize_is_idempotent_after_partial_commit() -> None:
+    stabilizer = HypothesisStabilizer(required_agreements=2, guard_seconds=0.1)
+    hypothesis = words(('ano', 0.0, 0.2), ('ano', 0.2, 0.4))
+
+    stabilizer.update(hypothesis, audio_end=0.31)
+    partial = stabilizer.update(hypothesis, audio_end=0.31)
+    first_final = stabilizer.finalize(hypothesis)
+    second_final = stabilizer.finalize(hypothesis)
+
+    assert first_final.committed[: len(partial.committed)] == partial.committed
+    assert [word.text for word in first_final.committed] == ['ano', 'ano']
+    assert second_final.committed == first_final.committed
+    assert second_final.provisional == ()
+
+
 def test_overlapping_timestamp_drift_counts_as_agreement() -> None:
     stabilizer = HypothesisStabilizer(required_agreements=2, guard_seconds=0.0)
 

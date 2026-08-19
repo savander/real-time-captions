@@ -63,13 +63,13 @@ class HypothesisStabilizer:
             self._last_committed_end = self._committed[-1].end
 
     def _uncommitted(self, words: tuple[Word, ...]) -> tuple[Word, ...]:
-        current = tuple(word for word in words if word.end > self._last_committed_end)
-        matched = 0
-        for start in range(len(self._committed)):
-            length = 0
-            for committed, candidate in zip(self._committed[start:], current, strict=False):
-                if not _matches(committed, candidate):
-                    break
-                length += 1
-            matched = max(matched, length)
-        return current[matched:]
+        committed_prefix = 0
+        for committed, candidate in zip(self._committed, words, strict=False):
+            if not _matches(committed, candidate):
+                break
+            committed_prefix += 1
+        return tuple(
+            word
+            for word in words[committed_prefix:]
+            if word.end > self._last_committed_end
+        )
