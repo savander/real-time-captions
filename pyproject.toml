@@ -1,32 +1,25 @@
 [project]
-name = "real-time-captions"
-version = "0.1.0"
-description = "Real-time captions generator from system audio."
+name = 'real-time-captions'
+version = '0.1.0'
+description = 'Portable real-time captions core.'
 authors = [
-    { name = "Adam Jaworski" }
+    { name = 'Adam Jaworski' },
 ]
-requires-python = ">=3.12,<3.13"
+requires-python = '>=3.12,<3.13'
 dependencies = [
-    "faster-whisper>=1.2.1",
-    "numpy<2.0.0",
-    "protobuf>=6.33.5",
-    "pyqt6>=6.10.2",
-    "rich>=14.3.2",
-    "sentencepiece>=0.2.1",
-    "soundcard>=0.4.5",
-    "torch>=2.6.0",
-    "transformers>=5.1.0",
-    "platformdirs>=4.2.0",
-    "psutil>=5.9.0",
-    "huggingface_hub>=0.20.0",
+    'numpy<2.0.0',
+    'platformdirs>=4.2.0',
+]
+
+[dependency-groups]
+dev = [
+    'pytest>=8.3',
+    'pytest-cov>=6.0',
 ]
 
 [project.scripts]
-real-time-captions = "real_time_captions:main"
-
-[[tool.uv.index]]
-url = "https://download.pytorch.org/whl/cu124"
+real-time-captions = 'real_time_captions:main'
 
 [build-system]
-requires = ["uv_build>=0.10.0,<0.11.0"]
-build-backend = "uv_build"
+requires = ['uv_build>=0.10.0,<0.11.0']
+build-backend = 'uv_build'
