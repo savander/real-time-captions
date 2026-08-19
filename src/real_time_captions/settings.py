@@ -1,5 +1,6 @@
 import json
 import os
+import tempfile
 from dataclasses import asdict, dataclass
 from pathlib import Path
 
@@ -36,7 +37,8 @@ class SettingsStore:
         if not isinstance(raw, dict):
             self.warnings = ('invalid settings document',)
             return AppSettings()
-        if raw.get('schema_version') != _SCHEMA_VERSION:
+        version = raw.get('schema_version')
+        if type(version) is not int or version != _SCHEMA_VERSION:
             self.warnings = ('unsupported settings schema',)
             return AppSettings()
 
@@ -52,15 +54,29 @@ class SettingsStore:
         return AppSettings(target, view_mode, profile, locked_language)
 
     def save(self, settings: AppSettings) -> None:
+        if not isinstance(settings.profile, str) or settings.profile not in _PROFILES:
+            raise ValueError('profile must be an approved product profile')
         self.path.parent.mkdir(parents=True, exist_ok=True)
-        temporary = self.path.with_suffix(self.path.suffix + '.tmp')
         payload = {'schema_version': _SCHEMA_VERSION, **asdict(settings)}
+        temporary: Path | None = None
 
-        with temporary.open('w', encoding='utf-8') as stream:
-            json.dump(payload, stream, ensure_ascii=False, indent=2)
-            stream.flush()
-            os.fsync(stream.fileno())
-        temporary.replace(self.path)
+        try:
+            with tempfile.NamedTemporaryFile(
+                mode='w',
+                encoding='utf-8',
+                dir=self.path.parent,
+                prefix=f'.{self.path.name}.',
+                suffix='.tmp',
+                delete=False,
+            ) as stream:
+                temporary = Path(stream.name)
+                json.dump(payload, stream, ensure_ascii=False, indent=2)
+                stream.flush()
+                os.fsync(stream.fileno())
+            temporary.replace(self.path)
+        finally:
+            if temporary is not None:
+                temporary.unlink(missing_ok=True)
 
     @staticmethod
     def _read_target(
