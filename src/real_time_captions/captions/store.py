@@ -47,6 +47,8 @@ class CaptionStore:
         )
 
     def apply_translation(self, result: TranslationResult) -> bool:
+        if self.language is None or self.target is TargetLanguage.NATIVE:
+            return False
         if (result.session_id, result.sequence) != (self.session_id, self.sequence):
             return False
         self.translation_committed = result.committed

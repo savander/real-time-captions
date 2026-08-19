@@ -74,11 +74,34 @@ def test_translation_for_a_different_sequence_is_rejected() -> None:
     assert store.snapshot().translation_provisional == ""
 
 
+def test_translation_before_any_source_is_rejected_without_mutation() -> None:
+    store = CaptionStore(session_id="s1", target=TargetLanguage.ENGLISH)
+
+    accepted = store.apply_translation(TranslationResult("s1", -1, "Hello", "there"))
+
+    snapshot = store.snapshot()
+    assert accepted is False
+    assert snapshot.translation_committed == ""
+    assert snapshot.translation_provisional == ""
+
+
 def test_native_target_never_requests_translation() -> None:
     store = CaptionStore(session_id="s1", target=TargetLanguage.NATIVE)
     store.apply_source(1, "cs", (), (Word("Ahoj", 0.0, 0.4),))
 
     assert store.translation_request() is None
+
+
+def test_native_target_rejects_matching_translation_without_mutation() -> None:
+    store = CaptionStore(session_id="s1", target=TargetLanguage.NATIVE)
+    store.apply_source(1, "cs", (Word("Ahoj", 0.0, 0.4),), ())
+
+    accepted = store.apply_translation(TranslationResult("s1", 1, "Hello", ""))
+
+    snapshot = store.snapshot()
+    assert accepted is False
+    assert snapshot.translation_committed == ""
+    assert snapshot.translation_provisional == ""
 
 
 def test_snapshot_is_an_immutable_coherent_record_of_one_revision() -> None:
