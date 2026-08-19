@@ -33,12 +33,24 @@ def test_normalize_frame_downmixes_stereo_float32() -> None:
 
 
 def test_normalize_frame_scales_int16_to_float32() -> None:
-    frame = make_frame(np.array([-32767, 0, 32767], dtype=np.int16))
+    frame = make_frame(np.array([-32768, 0, 32767], dtype=np.int16))
 
     result = normalize_frame(frame)
 
-    np.testing.assert_allclose(result, np.array([-1.0, 0.0, 1.0], dtype=np.float32))
+    np.testing.assert_allclose(
+        result, np.array([-1.0, 0.0, 32767 / 32768], dtype=np.float32)
+    )
     assert result.dtype == np.float32
+
+
+def test_normalize_frame_centers_and_scales_uint8_pcm() -> None:
+    frame = make_frame(np.array([0, 128, 255], dtype=np.uint8))
+
+    result = normalize_frame(frame)
+
+    np.testing.assert_allclose(
+        result, np.array([-1.0, 0.0, 127 / 128], dtype=np.float32)
+    )
 
 
 def test_normalize_frame_resamples_to_requested_rate() -> None:

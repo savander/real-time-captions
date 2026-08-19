@@ -18,8 +18,15 @@ def normalize_frame(frame: AudioFrame, target_rate: int = 16_000) -> np.ndarray:
 
     samples = np.asarray(frame.samples)
     if np.issubdtype(samples.dtype, np.integer):
-        limit = float(np.iinfo(samples.dtype).max)
-        samples = samples.astype(np.float32) / limit
+        limits = np.iinfo(samples.dtype)
+        is_unsigned = np.issubdtype(samples.dtype, np.unsignedinteger)
+        samples = samples.astype(np.float32)
+        if is_unsigned:
+            midpoint = float(limits.max // 2 + 1)
+            samples = (samples - midpoint) / midpoint
+        else:
+            limit = float(max(abs(limits.min), limits.max))
+            samples = samples / limit
     else:
         samples = samples.astype(np.float32, copy=False)
 
