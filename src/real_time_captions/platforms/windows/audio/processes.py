@@ -48,6 +48,18 @@ class PsutilProcessApi:
                 continue
         return tuple(result)
 
+    def process(self, pid: int) -> ProcessInfo:
+        try:
+            process = self._module.Process(pid)
+            name = process.name() or f'PID {pid}'
+            try:
+                path = process.exe()
+            except self._module.AccessDenied:
+                path = None
+            return ProcessInfo(pid, name, path or None)
+        except (self._module.NoSuchProcess, self._module.ZombieProcess) as exc:
+            raise AudioSourceNotFound(f'process:pid:{pid}') from exc
+
 
 def _normalized_path(path: str) -> str:
     return path.replace('\\', '/').casefold()
@@ -80,14 +92,18 @@ def discover_process_sources(
 def resolve_process_selection(
     key: str, api: ProcessDiscoveryApi
 ) -> ProcessInfo:
-    processes = api.processes()
     if key.startswith('process:pid:'):
         try:
             pid = int(key.removeprefix('process:pid:'))
         except ValueError as exc:
             raise AudioSourceNotFound(key) from exc
+        direct = getattr(api, 'process', None)
+        if callable(direct):
+            return direct(pid)
+        processes = api.processes()
         matches = [process for process in processes if process.pid == pid]
     elif key.startswith('process:'):
+        processes = api.processes()
         path = key.removeprefix('process:').casefold()
         matches = [
             process

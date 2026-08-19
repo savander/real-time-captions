@@ -1,12 +1,11 @@
-# Portable Core Architecture
+# Real-Time Captions Architecture
 
 ## Milestone boundary
 
-This branch delivers a deterministic, platform-neutral caption-processing
-core. It accepts already-captured PCM sample windows, invokes injected
-backends, and publishes immutable caption snapshots. It deliberately contains
-no Windows capture, machine-learning runtime, GUI, child process, IPC, or
-release integration.
+The platform-neutral core accepts captured PCM sample windows, invokes injected
+backends, and publishes immutable caption snapshots. Windows capture lives in
+an adapter tree; machine-learning runtime, GUI, child process, IPC, and release
+integration remain outside this milestone.
 
 The portable package depends only on NumPy, SciPy, and platform-neutral Python
 standard-library facilities. Platform and model adapters belong behind
@@ -56,6 +55,33 @@ revision, and committed segment identity.
 
 Adapters own capture or model runtime state. The core owns no hardware,
 download, model-loading, or process lifecycle.
+
+## Windows audio adapters
+
+Windows 10/11 x64 on CPython 3.12 supports three source kinds behind the same
+AudioSource contract: system output and microphones through
+PyAudioWPatch/WASAPI, and a specific audio-owning process through the
+repository's Rust flexaudio/Windows Process Loopback helper. The default-output
+alias is resolved again for every session.
+
+Native callbacks copy PCM into a bounded oldest-drop queue and return
+immediately. AudioFrame owns a read-only NumPy copy, sequence numbers restart
+per session, and captured_at uses the session-relative monotonic clock. Source
+lifecycle is STARTING, RUNNING, optionally RECONNECTING, FAILED, then STOPPED.
+
+Process selections prefer a normalized executable path, so they survive PID
+changes. PID-only selection is used when Windows denies executable-path access.
+An ambiguous restarted executable is reported instead of guessed. A selected
+process that disappears enters explicit reconnect and never falls back to
+system loopback.
+
+PyAudioWPatch and psutil are optional Windows dependencies loaded lazily. The
+process helper is a separately built executable with a raw float32 stdout
+boundary. Importing the portable core does not load platform code. Capture
+probes run for at most five seconds and emit metadata only; they never persist
+or print PCM. Protected content can be silent by design. Microphone probing is
+opt-in. Hardware validation guarantees isolation of the selected PID, not
+automatic aggregation of audio sessions owned by its child processes.
 
 ## State ownership
 
@@ -161,10 +187,11 @@ path before constructing SettingsStore.
 
 ## Roadmap
 
-1. **Current: portable core** - deterministic state, protocols, settings,
+1. **Complete: portable core** - deterministic state, protocols, settings,
    diagnostics, and core smoke command.
-2. **Windows audio** - device, loopback, process, and microphone adapters.
-3. **Model benchmarks** - real ASR and translation adapters and RTX 3080
+2. **Complete: Windows audio** - device, loopback, process, and microphone
+   adapters.
+3. **Next: model benchmarks** - real ASR and translation adapters and RTX 3080
    profile evidence.
 4. **GUI and overlay** - host-owned paths, controls, tray, and caption view.
 5. **Child-process and release integration** - IPC, lifecycle, soak tests, and

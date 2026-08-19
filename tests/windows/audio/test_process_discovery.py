@@ -51,6 +51,20 @@ def test_inaccessible_path_uses_pid_only_key() -> None:
     assert resolve_process_selection('process:pid:42', FakeProcessApi((process,))) == process
 
 
+def test_pid_resolution_uses_direct_lookup_when_available() -> None:
+    process = ProcessInfo(42, 'Player.exe', r'C:\Apps\Player.exe')
+
+    class DirectApi:
+        def process(self, pid: int) -> ProcessInfo:
+            assert pid == 42
+            return process
+
+        def processes(self) -> tuple[ProcessInfo, ...]:
+            raise AssertionError('PID lookup must not enumerate every process')
+
+    assert resolve_process_selection('process:pid:42', DirectApi()) == process
+
+
 def test_vanished_process_is_typed() -> None:
     with pytest.raises(AudioSourceNotFound, match='process:pid:42'):
         resolve_process_selection('process:pid:42', FakeProcessApi(()))

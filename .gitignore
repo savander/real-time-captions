@@ -5,6 +5,8 @@ build/
 dist/
 wheels/
 *.egg-info
+.coverage
+native/**/target/
 
 # Virtual environments
 .venv

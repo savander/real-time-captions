@@ -5,6 +5,18 @@
 **Milestone:** 2 of 5
 **Reference platform:** Windows 10/11 x64 with CPython 3.12
 
+> **Implementation amendment (2026-08-19):** hardware validation rejected
+> ProcTap 1.0.3. Its native source contains a silent system-wide fallback and
+> it failed to attach to an already-playing process on the reference machine.
+> The shipped process adapter instead uses the pinned Rust `flexaudio 0.2.0`
+> helper, which captured an already-playing target with no system fallback.
+> PyAudioWPatch remains the system/microphone adapter. Release packaging must
+> bundle the prebuilt helper; source builds require Rust plus MSVC Build Tools.
+> Hardware validation covers the exact audio-owning PID. Automatic aggregation
+> of separate child-process audio sessions is deferred.
+> ProcTap-specific text below is retained only as the original approved design
+> record and is superseded by this amendment.
+
 ## Summary
 
 Add replaceable Windows audio adapters to the portable real-time captions core.

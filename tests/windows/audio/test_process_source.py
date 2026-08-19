@@ -38,7 +38,12 @@ class FakeTap:
         self.fail_start: Exception | None = None
 
     def get_format(self) -> dict[str, int | str]:
-        return {'sample_rate': 48_000, 'channels': 2, 'sample_format': self.sample_format}
+        return {
+            'sample_rate': 48_000,
+            'channels': 2,
+            'sample_format': self.sample_format,
+            'frames_per_chunk': 960,
+        }
 
     def start(self) -> None:
         if self.fail_start:
@@ -90,11 +95,22 @@ def selection() -> AudioSourceDescriptor:
     )
 
 
-def make_source(resolver: ScriptedResolver, factory: FakeFactory, clock: Clock, *, reconnect_attempts: int = 3) -> ProcessAudioSource:
+def make_source(
+    resolver: ScriptedResolver,
+    factory: FakeFactory,
+    clock: Clock,
+    *,
+    reconnect_attempts: int = 3,
+    queue_seconds: float = 2.0,
+) -> ProcessAudioSource:
     sessions = iter(('session-1', 'session-2', 'session-3'))
     return ProcessAudioSource(
         selection(),
-        AudioCaptureConfig(selection().id, reconnect_attempts=reconnect_attempts),
+        AudioCaptureConfig(
+            selection().id,
+            queue_seconds=queue_seconds,
+            reconnect_attempts=reconnect_attempts,
+        ),
         resolver,
         factory,
         clock=clock,
@@ -118,6 +134,27 @@ def test_process_callback_emits_float32_for_selected_pid() -> None:
     assert (frame.sample_rate, frame.channels, frame.sequence) == (48_000, 2, 1)
     np.testing.assert_allclose(frame.samples, samples)
     assert factory.pids == [42]
+
+
+def test_queue_capacity_uses_helper_chunk_duration() -> None:
+    clock = Clock()
+    factory = FakeFactory()
+    source = make_source(
+        ScriptedResolver([ProcessInfo(42, 'Player.exe', PATH)]),
+        factory,
+        clock,
+        queue_seconds=0.02,
+    )
+    source.start()
+    payload = np.zeros(1_920, dtype=np.float32).tobytes()
+
+    factory.taps[0].emit(payload, frames=960)
+    factory.taps[0].emit(payload, frames=960)
+
+    frame = source.read(0)
+    assert frame is not None
+    assert frame.sequence == 2
+    assert source.diagnostics().dropped_frames == 1
 
 
 def test_int16_format_is_decoded_without_losing_metadata() -> None:

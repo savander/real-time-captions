@@ -49,6 +49,10 @@ class WasapiAudioSource(ManagedSourceBase):
         self._close_stream()
         self._stop_session()
 
+    def close(self) -> None:
+        self.stop()
+        self._api.close()
+
     def _close_stream(self) -> None:
         stream = self._stream
         self._stream = None
@@ -62,7 +66,7 @@ class WasapiAudioSource(ManagedSourceBase):
 
     def _resolve_device(self) -> WasapiDevice:
         if self._descriptor.kind is AudioSourceKind.PROCESS:
-            raise AudioSourceOpenError('process sources require ProcTap')
+            raise AudioSourceOpenError('process sources require the Rust helper')
         if self._descriptor.id == 'default-output':
             device = self._api.default_loopback()
             if device is None:

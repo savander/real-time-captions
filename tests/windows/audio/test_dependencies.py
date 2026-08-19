@@ -7,7 +7,6 @@ import pytest
 
 from real_time_captions.audio.capture import MissingAudioDependency
 from real_time_captions.platforms.windows.audio.dependencies import (
-    load_proctap,
     load_psutil,
     load_pyaudio,
 )
@@ -19,7 +18,6 @@ def test_manifest_declares_wheel_only_windows_audio_group() -> None:
 
     assert dependencies == [
         "PyAudioWPatch==0.2.12.8; sys_platform == 'win32'",
-        "proc-tap==1.0.3; sys_platform == 'win32' and platform_machine == 'AMD64'",
         "psutil>=7.0,<8; sys_platform == 'win32'",
     ]
 
@@ -28,7 +26,6 @@ def test_manifest_declares_wheel_only_windows_audio_group() -> None:
     ('loader', 'module_name'),
     [
         (load_pyaudio, 'pyaudiowpatch'),
-        (load_proctap, 'proctap'),
         (load_psutil, 'psutil'),
     ],
 )

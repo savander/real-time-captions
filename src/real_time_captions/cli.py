@@ -1,3 +1,4 @@
+import argparse
 import json
 import sys
 from collections.abc import Sequence
@@ -73,4 +74,37 @@ def main(argv: Sequence[str] | None = None) -> int:
     args = list(sys.argv[1:] if argv is None else argv)
     if args == ['core-smoke']:
         _core_smoke()
+        return 0
+
+    parser = argparse.ArgumentParser(prog='real-time-captions')
+    commands = parser.add_subparsers(dest='command', required=True)
+    commands.add_parser('core-smoke')
+    commands.add_parser('audio-list')
+    for command in (
+        'audio-probe-system',
+        'audio-probe-process',
+        'audio-probe-microphone',
+    ):
+        probe_parser = commands.add_parser(command)
+        probe_parser.add_argument('--seconds', type=float, default=2.0)
+        probe_parser.add_argument(
+            '--source',
+            required=command != 'audio-probe-system',
+            default='default-output',
+        )
+    try:
+        parsed = parser.parse_args(args)
+    except SystemExit as exc:
+        return int(exc.code)
+
+    from real_time_captions.platforms.windows.audio import probe
+
+    if parsed.command == 'audio-list':
+        payload = [
+            probe.descriptor_payload(item)
+            for item in probe.discover_all_sources()
+        ]
+    else:
+        payload = probe.probe_source(parsed.source, parsed.seconds)
+    print(json.dumps(payload, sort_keys=True))
     return 0

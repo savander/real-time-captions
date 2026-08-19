@@ -4,9 +4,17 @@
 
 **Goal:** Add wheel-only Windows system, process-tree, and microphone capture adapters that feed immutable bounded PCM frames into the portable captions core.
 
-**Architecture:** Portable capture contracts and buffering remain under `real_time_captions.audio`; all PyAudioWPatch, ProcTap, psutil, and Windows behavior remains under `real_time_captions.platforms.windows.audio`. Adapter callbacks copy native PCM into a bounded oldest-drop queue, while lifecycle and reconnect logic stay independent from models and GUI code.
+**Architecture:** Portable capture contracts and buffering remain under `real_time_captions.audio`; all PyAudioWPatch, psutil, flexaudio-helper, and Windows behavior remains under `real_time_captions.platforms.windows.audio`. Adapter callbacks copy native PCM into a bounded oldest-drop queue, while lifecycle and reconnect logic stay independent from models and GUI code.
 
-**Tech Stack:** Python 3.12, uv, NumPy, PyAudioWPatch 0.2.12.8, ProcTap 1.0.3, psutil 7.x, pytest, pytest-cov
+**Tech Stack:** Python 3.12, uv, NumPy, PyAudioWPatch 0.2.12.8, Rust, flexaudio 0.2.0, psutil 7.x, pytest, pytest-cov
+
+> **Execution amendment (2026-08-19):** Task 7's ProcTap implementation was
+> rejected by real hardware evidence: it did not attach to an already-playing
+> target, and upstream native code can silently fall back to full-system
+> loopback. The executed implementation uses a pinned `flexaudio 0.2.0` Rust
+> helper over raw float32 stdout. It passed attach-after-play hardware testing
+> with 98 frames, 188160 samples, peak 0.0100, and zero drops in two seconds.
+> All ProcTap commands below are superseded planning history.
 
 **Spec:** `docs/superpowers/specs/2026-08-19-windows-audio-capture-design.md`
 

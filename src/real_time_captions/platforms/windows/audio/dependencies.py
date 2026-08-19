@@ -18,9 +18,5 @@ def load_pyaudio() -> ModuleType:
     return _load('pyaudiowpatch')
 
 
-def load_proctap() -> ModuleType:
-    return _load('proctap')
-
-
 def load_psutil() -> ModuleType:
     return _load('psutil')

@@ -79,20 +79,6 @@ wheels = [
 ]
 
 [[package]]
-name = "proc-tap"
-version = "1.0.3"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "numpy" },
-    { name = "scipy" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/aa/67/b620f134a9609e16a9344e58f820a92efbb83a2609324bd2f1ed3b99faa5/proc_tap-1.0.3.tar.gz", hash = "sha256:f6b2c1bcd1cfca2428e6ee26493200c7d79d7ce7ffa442174a09f2787e20dd89", size = 105906, upload-time = "2025-12-09T14:51:24.139Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/f6/2c/165217a8df09088adc974495ca9e316ebe19f1d8f600197cfd13ad95c9a9/proc_tap-1.0.3-cp312-cp312-win_amd64.whl", hash = "sha256:48ddc19b36db2ee67d78eabe5a49a7f5e445de71011d870e3dd7be064d2f474f", size = 105997, upload-time = "2025-12-09T14:51:18.648Z" },
-    { url = "https://files.pythonhosted.org/packages/0d/74/c6887c5e4955d4f17a4f649b7b2c310351094d6d25e2a241815d622f84a1/proc_tap-1.0.3-py3-none-any.whl", hash = "sha256:5e8b02863f787a992377b2c0c5e1f3680fac92d608caa79fed3a0de0bb58b72e", size = 85309, upload-time = "2025-12-09T14:51:21.81Z" },
-]
-
-[[package]]
 name = "psutil"
 version = "7.2.2"
 source = { registry = "https://pypi.org/simple" }
@@ -165,7 +151,6 @@ dev = [
     { name = "pytest-cov" },
 ]
 windows-audio = [
-    { name = "proc-tap", marker = "platform_machine == 'AMD64' and sys_platform == 'win32'" },
     { name = "psutil", marker = "sys_platform == 'win32'" },
     { name = "pyaudiowpatch", marker = "sys_platform == 'win32'" },
 ]
@@ -182,7 +167,6 @@ dev = [
     { name = "pytest-cov", specifier = ">=6.0" },
 ]
 windows-audio = [
-    { name = "proc-tap", marker = "platform_machine == 'AMD64' and sys_platform == 'win32'", specifier = "==1.0.3" },
     { name = "psutil", marker = "sys_platform == 'win32'", specifier = ">=7.0,<8" },
     { name = "pyaudiowpatch", marker = "sys_platform == 'win32'", specifier = "==0.2.12.8" },
 ]

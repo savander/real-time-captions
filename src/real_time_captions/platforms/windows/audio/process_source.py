@@ -12,9 +12,9 @@ from real_time_captions.audio.capture import (
 )
 from real_time_captions.contracts import SourceState
 from real_time_captions.platforms.windows.audio.processes import ProcessInfo
-from real_time_captions.platforms.windows.audio.proctap_api import (
-    ProcTap,
-    ProcTapFactory,
+from real_time_captions.platforms.windows.audio.flexaudio_api import (
+    FlexAudioProcessFactory,
+    ProcessTap,
 )
 from real_time_captions.platforms.windows.audio.source_base import (
     ManagedSourceBase,
@@ -27,7 +27,7 @@ class ProcessAudioSource(ManagedSourceBase):
         descriptor: AudioSourceDescriptor,
         config: AudioCaptureConfig,
         resolver: Callable[[str], ProcessInfo],
-        factory: ProcTapFactory,
+        factory: FlexAudioProcessFactory,
         *,
         clock: Callable[[], float] = monotonic,
         session_id_factory: Callable[[], str] | None = None,
@@ -41,7 +41,7 @@ class ProcessAudioSource(ManagedSourceBase):
         self._factory = factory
         self._reconnect_limit = config.reconnect_attempts
         self._reconnect_attempts = 0
-        self._tap: ProcTap | None = None
+        self._tap: ProcessTap | None = None
 
     def start(self) -> str:
         try:
@@ -64,16 +64,16 @@ class ProcessAudioSource(ManagedSourceBase):
                 item_size = np.dtype(dtype).itemsize
                 frame_bytes = item_size * channels
                 if len(payload) % frame_bytes:
-                    raise AudioStreamInterrupted('invalid ProcTap PCM byte length')
+                    raise AudioStreamInterrupted('invalid helper PCM byte length')
                 frame_count = len(payload) // frame_bytes
                 if reported_frames >= 0 and reported_frames != frame_count:
-                    raise AudioStreamInterrupted('ProcTap frame count mismatch')
+                    raise AudioStreamInterrupted('helper frame count mismatch')
                 samples = np.frombuffer(payload, dtype=dtype).copy()
                 self._publish(generation, samples, sample_rate, channels)
             except Exception as exc:
                 self._mark_failed(exc)
 
-        tap: ProcTap | None = None
+        tap: ProcessTap | None = None
         try:
             tap = self._factory.create(process.pid, callback)
             self._tap = tap
@@ -82,7 +82,11 @@ class ProcessAudioSource(ManagedSourceBase):
             channels = int(format_info['channels'])
             sample_format = str(format_info['sample_format']).casefold()
             dtype = {'float32': np.float32, 'int16': np.int16}[sample_format]
-            frames_per_buffer = max(1, round(sample_rate * 0.01))
+            frames_per_buffer = int(
+                format_info.get(
+                    'frames_per_chunk', max(1, round(sample_rate * 0.01))
+                )
+            )
             session_id, generation = self._begin(
                 sample_rate, frames_per_buffer
             )
@@ -138,6 +142,9 @@ class ProcessAudioSource(ManagedSourceBase):
             return
         self._close_tap()
         self._stop_session()
+
+    def close(self) -> None:
+        self.stop()
 
     def _close_tap(self) -> None:
         tap = self._tap
