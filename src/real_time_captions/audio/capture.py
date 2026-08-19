@@ -24,12 +24,15 @@ class AudioSourceDescriptor:
 class AudioCaptureConfig:
     descriptor_id: str
     queue_seconds: float = 2.0
+    reconnect_attempts: int = 3
 
     def __post_init__(self) -> None:
         if not self.descriptor_id:
             raise ValueError('descriptor_id must not be empty')
         if self.queue_seconds <= 0:
             raise ValueError('queue_seconds must be positive')
+        if isinstance(self.reconnect_attempts, bool) or self.reconnect_attempts <= 0:
+            raise ValueError('reconnect_attempts must be a positive integer')
 
 
 @dataclass(frozen=True, slots=True)

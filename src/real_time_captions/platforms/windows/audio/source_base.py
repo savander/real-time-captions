@@ -44,6 +44,11 @@ class ManagedSourceBase:
     def _mark_running(self) -> None:
         self._state = SourceState.RUNNING
 
+    def _mark_reconnecting(self, error: Exception | None = None) -> None:
+        self._state = SourceState.RECONNECTING
+        if error is not None:
+            self._last_error = str(error)
+
     def _mark_failed(self, error: Exception) -> None:
         self._state = SourceState.FAILED
         self._last_error = str(error)
